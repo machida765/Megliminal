@@ -1,65 +1,111 @@
-import Image from "next/image";
+// app/page.tsx
+
+'use client';
+
+import { useState, useMemo } from 'react';
+import { CategoryGrid } from '@/components/CategoryGrid';
+import { PostCard } from '@/components/PostCard';
+import { MAJOR_CATEGORIES, POSTS } from '@/data/dummy';
 
 export default function Home() {
+  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+
+  // カテゴリに基づいてフィルタリング（アルゴリズムなし、純粋に新着順）
+  const filteredPosts = useMemo(() => {
+    if (!selectedCategory) {
+      // 選択なし：すべての投稿を新着順で表示
+      return [...POSTS].sort(
+        (a, b) =>
+          new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+      );
+    }
+
+    // カテゴリ選択時：該当カテゴリのみ、新着順で表示
+    return [...POSTS]
+      .filter((post) => post.categoryId === selectedCategory)
+      .sort(
+        (a, b) =>
+          new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+      );
+  }, [selectedCategory]);
+
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      {/* ヘッダー */}
+      <div className="mb-8">
+        <h2 className="text-3xl font-bold text-gray-900 mb-2">
+          人のおすすめを探す
+        </h2>
+        <p className="text-gray-600">
+          アルゴリズムに頼らず、カテゴリから「誰かの熱量」を探索できます。
+        </p>
+      </div>
+
+      {/* カテゴリグリッド */}
+      <CategoryGrid
+        categories={MAJOR_CATEGORIES}
+        selectedCategory={selectedCategory}
+        onSelectCategory={setSelectedCategory}
+      />
+
+      {/* 表示中のカテゴリ情報 */}
+      <div className="mb-6 flex items-center justify-between">
+        <div>
+          <p className="text-sm text-gray-600">
+            {selectedCategory
+              ? `${MAJOR_CATEGORIES.find((c) => c.id === selectedCategory)?.name}の投稿`
+              : 'すべてのカテゴリ'}
+            <span className="font-semibold text-gray-900 ml-2">
+              ({filteredPosts.length}件)
+            </span>
           </p>
         </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
+        <p className="text-xs text-gray-500">
+          ✨ 新着順で表示（パーソナライズなし）
+        </p>
+      </div>
+
+      {/* 投稿一覧 */}
+      {filteredPosts.length > 0 ? (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {filteredPosts.map((post) => (
+            <PostCard key={post.id} post={post} />
+          ))}
         </div>
-      </main>
+      ) : (
+        <div className="text-center py-12 bg-gray-50 rounded-lg border border-gray-200">
+          <p className="text-gray-600 mb-4">
+            このカテゴリにはまだ投稿がありません
+          </p>
+          <button className="text-blue-600 hover:underline font-semibold">
+            最初の投稿をしてみましょう！
+          </button>
+        </div>
+      )}
+
+      {/* フッター */}
+      <div className="mt-16 pt-8 border-t border-gray-200">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 text-center md:text-left">
+          <div>
+            <h3 className="font-semibold text-gray-900 mb-2">🎯 このサイトについて</h3>
+            <p className="text-sm text-gray-600">
+              SNSのアルゴリズムに疲れたあなたへ。純粋な「人のおすすめ」に出会えるプラットフォームです。
+            </p>
+          </div>
+          <div>
+            <h3 className="font-semibold text-gray-900 mb-2">📝 今後の予定</h3>
+            <p className="text-sm text-gray-600">
+              Phase 2では Supabase でのデータ永続化、ユーザー認証を実装します。
+            </p>
+          </div>
+          <div>
+            <h3 className="font-semibold text-gray-900 mb-2">📱 スマホ対応</h3>
+            <p className="text-sm text-gray-600">
+              Phase 3では React Native で iOS/Android アプリ化を予定しています。
+            </p>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
