@@ -32,4 +32,5 @@ export type Post = {
   description: string;
   url?: string;
   createdAt: string;
+  likeCount: number;
 };

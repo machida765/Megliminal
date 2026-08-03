@@ -66,6 +66,7 @@ export const POSTS: Post[] = [
     description: '言語学をテーマにした解説チャンネル。「なぜこの言葉はこう聞こえるのか」という疑問を丁寧に解きほぐしていく構成が秀逸。話し手2人のテンポが心地よく、ながら聴きにも最適です。',
     url: 'https://www.youtube.com/@yurugengo',
     createdAt: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString(),
+    likeCount: 15,
   },
   {
     id: 'post-002',
@@ -77,6 +78,7 @@ export const POSTS: Post[] = [
     description: 'コメディアンの人生を通じた「生きることの意味」を問う傑作。笑いと切なさが交錯する世界観に引き込まれました。',
     url: 'https://www.shinchosha.co.jp/',
     createdAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(),
+    likeCount: 8,
   },
   {
     id: 'post-003',
@@ -87,6 +89,7 @@ export const POSTS: Post[] = [
     title: 'インセプション',
     description: '時間、現実、潜在意識のレイヤーが織り交ざった複雑なストーリー。何度観ても新しい発見があります。音響設計も完璧。',
     createdAt: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString(),
+    likeCount: 20,
   },
   {
     id: 'post-004',
@@ -98,6 +101,7 @@ export const POSTS: Post[] = [
     description: 'VSCodeベースのAI統合エディタ。プロンプト一つでコード生成・リファクタリングが可能。開発速度が劇的に上がりました。',
     url: 'https://www.cursor.com/',
     createdAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
+    likeCount: 30,
   },
   {
     id: 'post-005',
@@ -109,6 +113,7 @@ export const POSTS: Post[] = [
     description: '再現性が高く、材料も手に入りやすい。毎回「そんな手があったか」と唸らされます。特に時短シリーズは平日の救世主。',
     url: 'https://www.youtube.com/@RyujiCooking',
     createdAt: new Date(Date.now() - 4 * 24 * 60 * 60 * 1000).toISOString(),
+    likeCount: 12,
   },
   {
     id: 'post-006',
@@ -119,5 +124,6 @@ export const POSTS: Post[] = [
     title: '「三体」- 劉慈欣',
     description: '中国発のSF大作。スケールが圧倒的で、物理法則すら武器にするアイデアに震えました。ページをめくる手が止まらない。',
     createdAt: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString(),
+    likeCount: 25,
   },
 ];
