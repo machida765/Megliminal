@@ -4,7 +4,7 @@ export const Card = forwardRef<HTMLDivElement, HTMLAttributes<HTMLDivElement>>(
   ({ className = '', ...props }, ref) => (
     <div
       ref={ref}
-      className={`rounded-2xl border border-orange-100 bg-white shadow-sm shadow-orange-100/40 ${className}`}
+      className={`paper-note ${className}`}
       {...props}
     />
   )

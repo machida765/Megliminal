@@ -1,72 +1,221 @@
 'use client';
-import React, { useState, useMemo } from 'react';
+
+import { Suspense, useState, useMemo, useEffect } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
+import { CategoryPicker } from '@/components/CategoryPicker';
 import { PostCard } from '@/components/PostCard';
-import { MAJOR_CATEGORIES, TAGS, POSTS } from '@/data/dummy';
-// Shadcn UIのSelectコンポーネントをインポート
-import { Select, SelectTrigger, SelectContent, SelectItem, SelectValue } from '@/components/ui/select';
+import { SearchPeriodFilter, formatSearchDateRangeLabel } from '@/components/SearchPeriodFilter';
+import {
+  Select,
+  SelectTrigger,
+  SelectContent,
+  SelectItem,
+  SelectValue,
+} from '@/components/ui/select';
+import { useMajorCategories, usePosts, useSubCategories, useTags } from '@/lib/data/hooks';
+import { useAuth } from '@/components/providers/AuthProvider';
+import {
+  defaultSearchFilters,
+  filterAndSortPosts,
+  SEARCH_SORT_LABELS,
+  type SearchFilters,
+  type SearchSort,
+  type TagMatch,
+} from '@/lib/search';
+import { RANKING_PERIOD_LABELS, type Tag } from '@/types';
+import { Minus, Plus, X } from 'lucide-react';
 
-const SearchPage = () => {
-  const [searchTerm, setSearchTerm] = useState('');
-  const [selectedCategory, setSelectedCategory] = useState('');
-  const [selectedTag, setSelectedTag] = useState('');
+function hasAdvancedFilters(filters: SearchFilters): boolean {
+  return (
+    filters.query.trim().length > 0 ||
+    filters.period !== 'all' ||
+    Boolean(filters.dateFrom) ||
+    Boolean(filters.dateTo) ||
+    filters.tagIds.length > 0 ||
+    filters.tagMatch === 'and'
+  );
+}
 
-  const filteredPosts = useMemo(() => {
-    return POSTS.filter(post => {
-      const matchesSearchTerm =
-        post.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        post.description.toLowerCase().includes(searchTerm.toLowerCase());
-      
-      const matchesCategory = selectedCategory ? post.majorCategoryId === selectedCategory : true;
-      const matchesTag = selectedTag ? post.tagIds.includes(selectedTag) : true;
+export default function SearchPage() {
+  return (
+    <Suspense fallback={<div className="px-4 py-20 text-center text-[#8a6a52]">読み込み中...</div>}>
+      <SearchPageInner />
+    </Suspense>
+  );
+}
 
-      return matchesSearchTerm && matchesCategory && matchesTag;
-    });
-  }, [searchTerm, selectedCategory, selectedTag]);
+function SearchPageInner() {
+  const searchParams = useSearchParams();
+  const { user } = useAuth();
+  const { categories } = useMajorCategories();
+  const { subCategories } = useSubCategories();
+  const { tags } = useTags();
+  const { posts, loading } = usePosts(user?.id);
+  const [filters, setFilters] = useState<SearchFilters>(defaultSearchFilters);
+  const [expanded, setExpanded] = useState(false);
+
+  useEffect(() => {
+    const q = searchParams.get('q');
+    if (q) {
+      setFilters((prev) => ({ ...prev, query: q }));
+      setExpanded(true);
+    }
+  }, [searchParams]);
+
+  const filteredPosts = useMemo(
+    () => filterAndSortPosts(posts, filters),
+    [posts, filters]
+  );
+
+  const activeCategory = categories.find((c) => c.id === filters.categoryId);
+  const activeSubCategory = subCategories.find((c) => c.id === filters.subCategoryId);
+  const activeTags = tags.filter((t) => filters.tagIds.includes(t.id));
+  const hasExtraFilters =
+    Boolean(filters.categoryId) ||
+    Boolean(filters.subCategoryId) ||
+    filters.tagIds.length > 0 ||
+    filters.period !== 'all' ||
+    Boolean(filters.dateFrom) ||
+    Boolean(filters.dateTo);
+
+  const customDateLabel = formatSearchDateRangeLabel(
+    filters.dateFrom,
+    filters.dateTo
+  );
+
+  const patch = (partial: Partial<SearchFilters>) => {
+    setFilters((prev) => ({ ...prev, ...partial }));
+  };
+
+  const toggleTag = (tagId: string) => {
+    setFilters((prev) => ({
+      ...prev,
+      tagIds: prev.tagIds.includes(tagId)
+        ? prev.tagIds.filter((id) => id !== tagId)
+        : [...prev.tagIds, tagId],
+    }));
+  };
+
+  const resetFilters = () => {
+    setFilters((prev) => ({
+      ...defaultSearchFilters(),
+      query: prev.query,
+      sort: prev.sort,
+    }));
+  };
+
+  const toggleExpanded = () => setExpanded((open) => !open);
 
   return (
-    <div className="max-w-4xl mx-auto px-4 py-8">
-      <h1 className="text-3xl font-bold mb-6 text-center">検索</h1>
-      
-      <div className="flex flex-col space-y-4 mb-8">
-        {/* キーワード検索 */}
-        <div className="flex space-x-2">
-          <Input
-            type="text"
-            placeholder="キーワードを入力..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="flex-grow"
-          />
-        </div>
+    <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <header className="mb-5">
+        <h1 className="text-2xl sm:text-3xl font-black text-[#3b2a22] mb-1">検索</h1>
+        <p className="text-sm text-[#6a5344]">
+          まずは大ジャンル・小ジャンルから。タグ・キーワード・期間などは詳細条件を開いて設定できます。
+        </p>
+      </header>
 
-        {/* カテゴリとタグのフィルター */}
-        <div className="flex space-x-2">
-          {/* カテゴリ選択 */}
-          <Select value={selectedCategory} onValueChange={setSelectedCategory}>
-            <SelectTrigger className="w-[180px]">
-              <SelectValue placeholder="カテゴリを選択" />
+      <div className="func-surface p-4 mb-4 space-y-4">
+        <CategoryPicker
+          majorCategories={categories}
+          subCategories={subCategories}
+          majorCategoryId={filters.categoryId}
+          subCategoryId={filters.subCategoryId}
+          onMajorChange={(categoryId) =>
+            patch({
+              categoryId,
+              subCategoryId:
+                filters.subCategoryId &&
+                subCategories.find((sub) => sub.id === filters.subCategoryId)
+                  ?.majorCategoryId === categoryId
+                  ? filters.subCategoryId
+                  : null,
+            })
+          }
+          onSubChange={(subCategoryId) => patch({ subCategoryId })}
+        />
+
+        <button
+          type="button"
+          onClick={toggleExpanded}
+          className="inline-flex items-center gap-1.5 text-sm font-bold text-[#c45c28] hover:text-[#a34a20]"
+        >
+          {expanded ? (
+            <>
+              <Minus className="w-4 h-4" />
+              詳細条件を閉じる
+            </>
+          ) : (
+            <>
+              <Plus className="w-4 h-4" />
+              詳細条件を設定
+              {hasAdvancedFilters(filters) && (
+                <span className="text-xs font-normal text-[#8a6a52]">（設定中）</span>
+              )}
+            </>
+          )}
+        </button>
+
+        {expanded && (
+          <div className="space-y-4 pt-3 border-t border-[#efe3d2]">
+            <div>
+              <p className="text-xs font-bold text-[#8a6a52] mb-2">キーワード</p>
+              <Input
+                type="text"
+                placeholder="タイトル・本文・投稿者名で探す"
+                value={filters.query}
+                onChange={(e) => patch({ query: e.target.value })}
+                className="bg-white"
+              />
+            </div>
+
+            <TagPicker
+              tags={tags}
+              selectedIds={filters.tagIds}
+              onToggle={toggleTag}
+              match={filters.tagMatch}
+              onMatchChange={(tagMatch) => patch({ tagMatch })}
+            />
+
+            <div>
+              <p className="text-xs font-bold text-[#8a6a52] mb-2">投稿日</p>
+              <SearchPeriodFilter
+                period={filters.period}
+                dateFrom={filters.dateFrom}
+                dateTo={filters.dateTo}
+                onPeriodChange={(period) => patch({ period })}
+                onDateFromChange={(dateFrom) => patch({ dateFrom })}
+                onDateToChange={(dateTo) => patch({ dateTo })}
+              />
+            </div>
+          </div>
+        )}
+      </div>
+
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-4">
+        <p className="text-sm text-[#6a5344] tabular">
+          {loading ? '...' : `検索結果：${filteredPosts.length} 件`}
+          {filters.tagIds.length > 1 && (
+            <span className="ml-2 text-xs">
+              タグは「{filters.tagMatch === 'and' ? 'すべて含む' : 'いずれか'}」
+            </span>
+          )}
+        </p>
+        <div className="flex items-center gap-2">
+          <span className="text-xs font-bold text-[#8a6a52] shrink-0">並び替え</span>
+          <Select
+            value={filters.sort}
+            onValueChange={(v) => patch({ sort: (v ?? 'newest') as SearchSort })}
+          >
+            <SelectTrigger className="w-full sm:w-48 bg-white border-[#e4d2b8]">
+              <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="">すべてのカテゴリ</SelectItem>
-              {MAJOR_CATEGORIES.map(category => (
-                <SelectItem key={category.id} value={category.id}>
-                  {category.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-
-          {/* タグ選択 */}
-          <Select value={selectedTag} onValueChange={setSelectedTag}>
-            <SelectTrigger className="w-[180px]">
-              <SelectValue placeholder="タグを選択" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="">すべてのタグ</SelectItem>
-              {TAGS.map(tag => (
-                <SelectItem key={tag.id} value={tag.id}>
-                  {tag.name}
+              {Object.entries(SEARCH_SORT_LABELS).map(([value, label]) => (
+                <SelectItem key={value} value={value}>
+                  {label}
                 </SelectItem>
               ))}
             </SelectContent>
@@ -74,19 +223,164 @@ const SearchPage = () => {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {filteredPosts.length > 0 ? (
+      {(hasExtraFilters || filters.query || filters.sort !== 'newest') && (
+        <div className="flex flex-wrap items-center gap-2 mb-4">
+          {filters.query && (
+            <FilterChip
+              label={`「${filters.query}」`}
+              onRemove={() => patch({ query: '' })}
+            />
+          )}
+          {activeSubCategory ? (
+            <FilterChip
+              label={activeSubCategory.name}
+              onRemove={() => patch({ subCategoryId: null })}
+            />
+          ) : (
+            activeCategory && (
+              <FilterChip
+                label={activeCategory.name}
+                onRemove={() => patch({ categoryId: null, subCategoryId: null })}
+              />
+            )
+          )}
+          {activeTags.map((tag) => (
+            <FilterChip
+              key={tag.id}
+              label={`#${tag.name}`}
+              onRemove={() => toggleTag(tag.id)}
+            />
+          ))}
+          {customDateLabel ? (
+            <FilterChip
+              label={customDateLabel}
+              onRemove={() => patch({ dateFrom: null, dateTo: null })}
+            />
+          ) : (
+            filters.period !== 'all' && (
+              <FilterChip
+                label={RANKING_PERIOD_LABELS[filters.period]}
+                onRemove={() => patch({ period: 'all' })}
+              />
+            )
+          )}
+          {filters.sort !== 'newest' && (
+            <span className="text-xs text-[#8a6a52]">
+              {SEARCH_SORT_LABELS[filters.sort]}
+            </span>
+          )}
+          {hasExtraFilters && (
+            <button
+              type="button"
+              onClick={resetFilters}
+              className="text-xs font-bold text-[#c45c28] ml-1"
+            >
+              条件をクリア
+            </button>
+          )}
+        </div>
+      )}
+
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        {!loading && filteredPosts.length > 0 ? (
           filteredPosts.map((post) => (
-            <PostCard key={post.id} post={post} />
+            <PostCard key={post.id} post={post} categories={categories} flat />
           ))
         ) : (
-          <p className="text-center text-gray-500 col-span-full">
-            検索結果はありません
-          </p>
+          <div className="col-span-full func-surface p-10 text-center">
+            <p className="text-[#6a5344] mb-3">
+              {loading ? '読み込み中...' : '条件に合う投稿はありません'}
+            </p>
+            {!loading && hasExtraFilters && (
+              <Button type="button" variant="flat-outline" onClick={resetFilters}>
+                絞り込みを外す
+              </Button>
+            )}
+          </div>
         )}
       </div>
     </div>
   );
-};
+}
 
-export default SearchPage;
+function TagPicker({
+  tags,
+  selectedIds,
+  onToggle,
+  match,
+  onMatchChange,
+}: {
+  tags: Tag[];
+  selectedIds: string[];
+  onToggle: (tagId: string) => void;
+  match: TagMatch;
+  onMatchChange: (match: TagMatch) => void;
+}) {
+  return (
+    <div>
+      <div className="flex flex-wrap items-center justify-between gap-2 mb-2">
+        <p className="text-xs font-bold text-[#8a6a52]">タグ（複数可）</p>
+        {onMatchChange && match && (
+          <div className="flex gap-1">
+            <Button
+              type="button"
+              size="sm"
+              variant={match === 'or' ? 'flat' : 'flat-outline'}
+              onClick={() => onMatchChange('or')}
+            >
+              いずれか
+            </Button>
+            <Button
+              type="button"
+              size="sm"
+              variant={match === 'and' ? 'flat' : 'flat-outline'}
+              onClick={() => onMatchChange('and')}
+            >
+              すべて含む
+            </Button>
+          </div>
+        )}
+      </div>
+      <div className="flex flex-wrap gap-2">
+        {tags
+          .filter((t) => t.isActive)
+          .map((tag) => {
+            const on = selectedIds.includes(tag.id);
+            return (
+              <button
+                key={tag.id}
+                type="button"
+                onClick={() => onToggle(tag.id)}
+                className={`text-sm px-3 py-1 border ${
+                  on
+                    ? 'bg-[#3b2a22] text-[#fff7d6] border-[#3b2a22]'
+                    : 'bg-white text-[#3b2a22] border-[#e4d2b8] hover:bg-[#fff6ea]'
+                }`}
+              >
+                #{tag.name}
+              </button>
+            );
+          })}
+      </div>
+    </div>
+  );
+}
+
+function FilterChip({
+  label,
+  onRemove,
+}: {
+  label: string;
+  onRemove: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onRemove}
+      className="inline-flex items-center gap-1 text-xs font-bold bg-[#f4ece0] text-[#3b2a22] px-2 py-1"
+    >
+      {label}
+      <X className="w-3 h-3" />
+    </button>
+  );
+}

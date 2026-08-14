@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono, Zen_Maru_Gothic } from "next/font/google";
 import { Navbar } from "@/components/Navbar";
+import { AuthProvider } from "@/components/providers/AuthProvider";
+import { APP_DESCRIPTION, APP_NAME, APP_TAGLINE } from "@/lib/config/app";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -20,8 +22,8 @@ const zenMaruGothic = Zen_Maru_Gothic({
 });
 
 export const metadata: Metadata = {
-  title: "okini | 誰かの「お気に入り」に出会える場所",
-  description: "アルゴリズムに頼らず、人のおすすめに出会えるプラットフォーム",
+  title: `${APP_NAME} | ${APP_TAGLINE}`,
+  description: APP_DESCRIPTION,
 };
 
 export default function RootLayout({
@@ -34,9 +36,11 @@ export default function RootLayout({
       lang="ja"
       className={`${geistSans.variable} ${geistMono.variable} ${zenMaruGothic.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col bg-gradient-to-b from-orange-50 via-amber-50/60 to-white">
-        <Navbar />
-        <main className="flex-1">{children}</main>
+      <body className="min-h-full flex flex-col text-[#3b2a22]">
+        <AuthProvider>
+          <Navbar />
+          <main className="flex-1">{children}</main>
+        </AuthProvider>
       </body>
     </html>
   );

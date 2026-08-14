@@ -1,19 +1,32 @@
-// types/index.ts（v2 - 横断タグ型対応）
+// types/index.ts（v3 - ランキング・ブックマーク・モデレーション）
+
+export type UserRole = 'user' | 'admin';
 
 export type MajorCategory = {
-  id: string;        // 'youtube', 'books', 'movies'
-  name: string;      // 'YouTube', '本・書籍', '映画'
-  icon?: string;     // lucide-react のアイコン名
-  order: number;     // 表示順（小さいほど上/左）
-  isActive: boolean; // false のとき一般ユーザーに非表示
-};
-
-export type Tag = {
-  id: string;        // 'mystery', 'sf', 'business'
-  name: string;      // 'ミステリ', 'SF', 'ビジネス'
+  id: string;
+  name: string;
+  icon?: string;
   order: number;
   isActive: boolean;
-  // 大カテゴリへの依存なし → どの大カテゴリにも使える
+};
+
+/** 大ジャンル配下の中・小ジャンル（投稿時は任意、検索で細分化） */
+export type SubCategory = {
+  id: string;
+  majorCategoryId: string;
+  name: string;
+  order: number;
+  isActive: boolean;
+};
+
+/** @deprecated MajorCategory を使用してください */
+export type Category = MajorCategory;
+
+export type Tag = {
+  id: string;
+  name: string;
+  order: number;
+  isActive: boolean;
 };
 
 export type User = {
@@ -22,15 +35,111 @@ export type User = {
   avatarUrl?: string;
 };
 
+export type Profile = User & {
+  email?: string;
+  role: UserRole;
+  createdAt: string;
+};
+
 export type Post = {
   id: string;
   userId: string;
   user: User;
-  majorCategoryId: string; // 大カテゴリは必ず1つ
-  tagIds: string[];         // タグは0個以上（横断可能）
+  majorCategoryId: string;
+  subCategoryId?: string | null;
+  tagIds: string[];
   title: string;
   description: string;
   url?: string;
   createdAt: string;
   likeCount: number;
+};
+
+export type Like = {
+  id: string;
+  postId: string;
+  userId: string;
+  createdAt: string;
+};
+
+export type Comment = {
+  id: string;
+  postId: string;
+  userId: string;
+  user: User;
+  body: string;
+  createdAt: string;
+};
+
+/** 大ジャンルごとの週1投稿制限の判定結果 */
+export type PostFrequencyCheck = {
+  canPost: boolean;
+  nextAvailableAt?: string;
+  daysRemaining?: number;
+};
+
+/** ランキング期間 */
+export type RankingPeriod = 'all' | 'month' | 'week';
+
+/** 投稿ランキング行 */
+export type PostRankingEntry = {
+  rank: number;
+  post: Post;
+  likeCount: number;
+};
+
+/** ユーザーランキング行 */
+export type UserRankingEntry = {
+  rank: number;
+  user: User;
+  value: number;
+};
+
+/** ユーザーランキングの並び基準 */
+export type UserRankingSort = 'likes' | 'posts';
+
+/** ブックマーク */
+export type Bookmark = {
+  id: string;
+  userId: string;
+  postId: string;
+  createdAt: string;
+};
+
+/** 通報理由 */
+export type ReportReason =
+  | 'spam'
+  | 'inappropriate'
+  | 'misinformation'
+  | 'other';
+
+/** 通報 */
+export type Report = {
+  id: string;
+  postId: string;
+  reporterId: string;
+  reason: ReportReason;
+  detail?: string;
+  createdAt: string;
+  status: 'pending' | 'resolved';
+};
+
+/** ユーザー個別の非表示 */
+export type HiddenPost = {
+  userId: string;
+  postId: string;
+  createdAt: string;
+};
+
+export const REPORT_REASON_LABELS: Record<ReportReason, string> = {
+  spam: 'スパム',
+  inappropriate: '不適切な内容',
+  misinformation: '誤情報',
+  other: 'その他',
+};
+
+export const RANKING_PERIOD_LABELS: Record<RankingPeriod, string> = {
+  all: '全期間',
+  month: '今月',
+  week: '今週',
 };

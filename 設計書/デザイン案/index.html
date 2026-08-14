@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>メグリミナル — デザイン案</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@400;700;900&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet" />
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: "Zen Maru Gothic", sans-serif;
+      background: #fff7ed;
+      color: #431407;
+    }
+    .wrap { max-width: 920px; margin: 0 auto; padding: 48px 20px 80px; }
+    .kicker {
+      font-family: "Space Grotesk", sans-serif;
+      letter-spacing: 0.22em;
+      font-size: 11px;
+      color: #c2410c;
+      text-transform: uppercase;
+    }
+    h1 { font-size: clamp(28px, 5vw, 44px); margin: 10px 0 8px; font-weight: 900; }
+    h2.sec { margin: 42px 0 8px; font-size: 22px; }
+    .lead, .sub { color: #9a3412; line-height: 1.8; max-width: 42em; }
+    .grid { display: grid; gap: 18px; margin-top: 20px; }
+    @media (min-width: 760px) { .grid { grid-template-columns: 1fr 1fr; } }
+    a.card {
+      display: block; text-decoration: none; color: inherit;
+      background: #fff; border: 1px solid #fed7aa; border-radius: 22px; overflow: hidden;
+    }
+    a.card:hover { transform: translateY(-3px); transition: .2s ease; }
+    .preview { height: 120px; position: relative; }
+    .preview span {
+      position: absolute; inset: auto 16px 12px 16px;
+      font-size: 12px; letter-spacing: .14em; text-transform: uppercase;
+      font-family: "Space Grotesk", sans-serif; color: #fff;
+    }
+    .body { padding: 16px 18px 20px; }
+    .body h3 { margin: 0 0 6px; font-size: 18px; }
+    .body p { margin: 0; color: #9a3412; font-size: 14px; line-height: 1.7; }
+    .w1 { background: linear-gradient(135deg, #f7efe4, #e07a3d); }
+    .w2 { background: linear-gradient(135deg, #fff4e8, #d4572a); }
+    .w3 { background: linear-gradient(135deg, #efe0c8, #ef7d3b); }
+    .w4 { background: linear-gradient(135deg, #fbbf24, #fb7185); }
+    .a { background: radial-gradient(circle at 20% 20%, #5b7cff, #070814); }
+    .b { background: linear-gradient(180deg, #0c3a3a, #021616); }
+    .c { background: repeating-linear-gradient(90deg, #1c1c16 0 28px, #24241c 28px 56px); }
+    .d { background: radial-gradient(circle at 50% 120%, #ffd27a, #120c18); }
+    .note {
+      margin-top: 32px; padding: 16px 18px;
+      border: 1px dashed #fdba74; border-radius: 14px; color: #9a3412; font-size: 13px; line-height: 1.7;
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="kicker">Design mock · top only</div>
+    <h1>メグリミナル デザイン案</h1>
+    <p class="lead">既存の Next.js ソースは変更していません。トップ画面だけの試作です。</p>
+
+    <h2 class="sec">温かみ系</h2>
+    <p class="sub">いまのオレンジ基調を崩さず、トーンだけ変えた4案。</p>
+    <div class="grid">
+      <a class="card" href="./05-engawa-cafe.html">
+        <div class="preview w1"><span>E · Engawa Cafe</span></div>
+        <div class="body"><h3>縁側カフェ</h3><p>和紙と木の色。明朝の見出しで、少し落ち着いた喫茶店。</p></div>
+      </a>
+      <a class="card" href="./06-sunset-magazine.html">
+        <div class="preview w2"><span>F · Sunset Magazine</span></div>
+        <div class="body"><h3>夕暮れマガジン</h3><p>大きな見出しの雑誌レイアウト。ヒーロー投稿を表紙にする。</p></div>
+      </a>
+      <a class="card" href="./07-bulletin.html">
+        <div class="preview w3"><span>G · Bulletin</span></div>
+        <div class="body"><h3>まちの掲示板</h3><p>コルクボードに貼ったメモ。人の手触りがいちばん強い。</p></div>
+      </a>
+      <a class="card" href="./08-current-plus.html">
+        <div class="preview w4"><span>H · Current+</span></div>
+        <div class="body"><h3>いまの延長</h3><p>現行トップに一番近い。角丸とグラデを少し整えた版。</p></div>
+      </a>
+    </div>
+
+    <h2 class="sec">宇宙・リミナル系</h2>
+    <p class="sub">前回出した4案。</p>
+    <div class="grid">
+      <a class="card" href="./01-star-lobby.html">
+        <div class="preview a"><span>A · Star Lobby</span></div>
+        <div class="body"><h3>星間ロビー</h3><p>暗い宇宙とネオンの案内板。</p></div>
+      </a>
+      <a class="card" href="./02-infinite-pool.html">
+        <div class="preview b"><span>B · Infinite Pool</span></div>
+        <div class="body"><h3>無限プール</h3><p>蛍光灯と静かな水面。</p></div>
+      </a>
+      <a class="card" href="./03-station-corridor.html">
+        <div class="preview c"><span>C · Station Corridor</span></div>
+        <div class="body"><h3>ステーション回廊</h3><p>黄ばんだ照明の長い廊下。</p></div>
+      </a>
+      <a class="card" href="./04-dream-motel.html">
+        <div class="preview d"><span>D · Dream Motel</span></div>
+        <div class="body"><h3>夢のモーテル</h3><p>窓の外は銀河、室内は古いモーテル。</p></div>
+      </a>
+    </div>
+    <p class="note">リンクはダミーです。気に入った案があれば本アプリへ移植できます。</p>
+  </div>
+</body>
+</html>

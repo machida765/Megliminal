@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>メグリミナル — 星間ロビー</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@400;500;700;900&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --void: #05060c;
+      --panel: rgba(12, 16, 32, 0.72);
+      --ink: #eef2ff;
+      --muted: #9aa6c8;
+      --cyan: #7ee7ff;
+      --violet: #8b7cff;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      color: var(--ink);
+      font-family: "Zen Maru Gothic", sans-serif;
+      background: #05060c;
+      min-height: 100vh;
+    }
+    .stars, .stars::after {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      background-image:
+        radial-gradient(1px 1px at 12% 18%, #fff 50%, transparent 51%),
+        radial-gradient(1px 1px at 28% 72%, #c9d4ff 50%, transparent 51%),
+        radial-gradient(1.5px 1.5px at 64% 22%, #fff 50%, transparent 51%),
+        radial-gradient(1px 1px at 81% 58%, #9ad7ff 50%, transparent 51%),
+        radial-gradient(1px 1px at 47% 41%, #fff 50%, transparent 51%),
+        radial-gradient(1px 1px at 8% 88%, #fff 50%, transparent 51%),
+        radial-gradient(1.5px 1.5px at 92% 12%, #d6c8ff 50%, transparent 51%);
+      opacity: .7;
+    }
+    .nebula {
+      position: fixed;
+      inset: -20%;
+      background:
+        radial-gradient(ellipse at 20% 0%, rgba(90, 80, 255, .28), transparent 45%),
+        radial-gradient(ellipse at 90% 20%, rgba(40, 180, 255, .18), transparent 40%),
+        radial-gradient(ellipse at 50% 110%, rgba(120, 40, 180, .22), transparent 45%);
+      filter: blur(8px);
+      pointer-events: none;
+    }
+    nav {
+      position: sticky;
+      top: 0;
+      z-index: 10;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      padding: 16px 22px;
+      backdrop-filter: blur(16px);
+      background: rgba(5,6,12,.55);
+      border-bottom: 1px solid rgba(126, 231, 255, .12);
+    }
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      text-decoration: none;
+      color: inherit;
+    }
+    .glyph {
+      width: 34px; height: 34px;
+      border-radius: 50%;
+      background: conic-gradient(from 210deg, var(--cyan), var(--violet), #fff, var(--cyan));
+      box-shadow: 0 0 18px rgba(126,231,255,.4);
+    }
+    .brand b { font-size: 18px; letter-spacing: .04em; }
+    .brand small { display: block; color: var(--muted); font-size: 11px; }
+    .nav-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+    .btn {
+      border: 1px solid rgba(126,231,255,.25);
+      background: transparent;
+      color: var(--ink);
+      border-radius: 999px;
+      padding: 8px 14px;
+      font: inherit;
+      cursor: pointer;
+      text-decoration: none;
+      font-size: 13px;
+    }
+    .btn.primary {
+      background: linear-gradient(90deg, #6ee7ff, #8b7cff);
+      color: #071018;
+      border: none;
+      font-weight: 700;
+    }
+    main { position: relative; max-width: 1080px; margin: 0 auto; padding: 28px 18px 80px; }
+    .hero {
+      display: grid;
+      gap: 28px;
+      padding: 36px 28px;
+      border-radius: 28px;
+      background:
+        linear-gradient(180deg, rgba(20,28,58,.7), rgba(8,10,22,.55));
+      border: 1px solid rgba(126,231,255,.16);
+      box-shadow: inset 0 0 80px rgba(90,120,255,.12);
+      position: relative;
+      overflow: hidden;
+    }
+    @media (min-width: 800px) {
+      .hero { grid-template-columns: 1.4fr .7fr; align-items: center; }
+    }
+    .gate {
+      font-family: "Space Grotesk", sans-serif;
+      letter-spacing: .28em;
+      font-size: 11px;
+      color: var(--cyan);
+      text-transform: uppercase;
+    }
+    h1 { font-size: clamp(28px, 5vw, 48px); margin: 10px 0 14px; line-height: 1.15; }
+    .hero p { color: #c9d3f0; line-height: 1.8; max-width: 38em; }
+    .orbit {
+      width: 180px; height: 180px;
+      margin: 0 auto;
+      border-radius: 50%;
+      border: 1px dashed rgba(126,231,255,.4);
+      display: grid;
+      place-items: center;
+      position: relative;
+    }
+    .orbit::before {
+      content: "";
+      position: absolute;
+      width: 10px; height: 10px;
+      background: var(--cyan);
+      border-radius: 50%;
+      top: 8px; left: 50%;
+      transform: translateX(-50%);
+      box-shadow: 0 0 12px var(--cyan);
+    }
+    .likes {
+      width: 110px; height: 110px;
+      border-radius: 50%;
+      background: rgba(8,12,28,.8);
+      border: 1px solid rgba(255,255,255,.18);
+      display: grid;
+      place-items: center;
+      text-align: center;
+    }
+    .likes b { font-size: 34px; display: block; }
+    .likes span { font-size: 11px; color: var(--muted); }
+    .search {
+      margin: 28px 0 40px;
+      padding: 28px;
+      text-align: center;
+      border-radius: 24px;
+      border: 1px dashed rgba(139,124,255,.4);
+      background: rgba(12,10,28,.45);
+    }
+    .search h2 { margin: 0 0 8px; }
+    .search p { color: var(--muted); }
+    .section-label {
+      font-family: "Space Grotesk", sans-serif;
+      letter-spacing: .2em;
+      font-size: 11px;
+      color: var(--cyan);
+      margin: 0 0 16px;
+    }
+    .grid {
+      display: grid;
+      gap: 16px;
+      margin-bottom: 42px;
+    }
+    @media (min-width: 720px) { .grid { grid-template-columns: repeat(3, 1fr); } }
+    .card {
+      background: var(--panel);
+      border: 1px solid rgba(255,255,255,.08);
+      border-radius: 18px;
+      padding: 18px;
+      backdrop-filter: blur(10px);
+    }
+    .tag {
+      display: inline-block;
+      font-size: 11px;
+      color: var(--cyan);
+      border: 1px solid rgba(126,231,255,.3);
+      border-radius: 999px;
+      padding: 2px 8px;
+      margin-bottom: 8px;
+    }
+    .card h3 { margin: 0 0 8px; font-size: 17px; }
+    .card p { margin: 0; color: var(--muted); font-size: 13px; line-height: 1.7; }
+    .meta { display: flex; justify-content: space-between; margin-top: 14px; font-size: 12px; color: #b7c0dc; }
+    .foot {
+      display: grid; gap: 14px;
+    }
+    @media (min-width: 720px) { .foot { grid-template-columns: repeat(3, 1fr); } }
+    .back {
+      position: fixed; bottom: 16px; left: 16px;
+      background: #0b1020; color: #fff; text-decoration: none;
+      padding: 8px 12px; border-radius: 999px; font-size: 12px;
+      border: 1px solid #334;
+      z-index: 20;
+    }
+  </style>
+</head>
+<body>
+  <div class="nebula"></div>
+  <div class="stars"></div>
+  <nav>
+    <a class="brand" href="#">
+      <div class="glyph"></div>
+      <div>
+        <b>メグリミナル</b>
+        <small>GATE 07 · ARRIVALS</small>
+      </div>
+    </a>
+    <div class="nav-actions">
+      <a class="btn" href="#">ランキング</a>
+      <a class="btn" href="#">保存</a>
+      <a class="btn primary" href="#">投稿する</a>
+      <a class="btn" href="#">ログイン</a>
+    </div>
+  </nav>
+  <main>
+    <section class="hero">
+      <div>
+        <div class="gate">Tonight's signal · 今週のイチオシ</div>
+        <h1>Cursor（AIコードエディタ）</h1>
+        <p>VSCodeベースのAI統合エディタ。プロンプト一つでコード生成・リファクタリングが可能。開発速度が劇的に上がりました。</p>
+        <a class="btn primary" href="#" style="display:inline-block;margin-top:18px">詳細を見る</a>
+      </div>
+      <div class="orbit">
+        <div class="likes"><b>30</b><span>いいね</span></div>
+      </div>
+    </section>
+    <section class="search">
+      <div class="gate">Lost & found</div>
+      <h2>あなたのおすすめを見つけよう</h2>
+      <p>キーワード、カテゴリ、タグを組み合わせて、誰かの熱量を探す。</p>
+      <a class="btn primary" href="#" style="display:inline-block;margin-top:16px">すべての投稿を検索する</a>
+    </section>
+    <p class="section-label">NEW ARRIVALS · 新着投稿</p>
+    <div class="grid">
+      <article class="card"><span class="tag">YouTube</span><h3>ゆる言語学ラジオ</h3><p>言語学をテーマにした解説チャンネル。話し手2人のテンポが心地よい。</p><div class="meta"><span>👨‍💻 Taro</span><span>♥ 15</span></div></article>
+      <article class="card"><span class="tag">アプリ</span><h3>Cursor（AIコードエディタ）</h3><p>プロンプト一つでコード生成。開発速度が劇的に上がりました。</p><div class="meta"><span>👨‍💻 Taro</span><span>♥ 30</span></div></article>
+      <article class="card"><span class="tag">本</span><h3>「火花」- 又吉直樹</h3><p>笑いと切なさが交錯する世界観に引き込まれました。</p><div class="meta"><span>📚 Yuki</span><span>♥ 8</span></div></article>
+    </div>
+    <p class="section-label">POPULAR FREQUENCY · 人気の投稿</p>
+    <div class="grid">
+      <article class="card"><span class="tag">映画</span><h3>インセプション</h3><p>何度観ても新しい発見があります。音響設計も完璧。</p><div class="meta"><span>🎬 Jiro</span><span>♥ 20</span></div></article>
+      <article class="card"><span class="tag">本</span><h3>「三体」- 劉慈欣</h3><p>スケールが圧倒的で、物理法則すら武器にするアイデア。</p><div class="meta"><span>👩‍🎨 Hanako</span><span>♥ 25</span></div></article>
+      <article class="card"><span class="tag">YouTube</span><h3>リュウジのバズレシピ</h3><p>再現性が高く、材料も手に入りやすい時短シリーズ。</p><div class="meta"><span>👩‍🎨 Hanako</span><span>♥ 12</span></div></article>
+    </div>
+    <div class="foot">
+      <div class="card"><h3>このサイトについて</h3><p>SNSのアルゴリズムに疲れたあなたへ。純粋な「人のおすすめ」に出会える場所です。</p></div>
+      <div class="card"><h3>開発方針</h3><p>画面を先に完成させ、データベースはその後。Local / Supabase を切り替えてテストできます。</p></div>
+      <div class="card"><h3>スマホ対応</h3><p>スマホブラウザでの閲覧に対応しています。ネイティブアプリは対象外です。</p></div>
+    </div>
+  </main>
+  <a class="back" href="./index.html">← 案一覧</a>
+</body>
+</html>

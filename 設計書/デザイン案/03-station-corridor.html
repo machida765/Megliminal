@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>メグリミナル — ステーション回廊</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@400;700;900&family=Share+Tech+Mono&display=swap" rel="stylesheet" />
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: "Zen Maru Gothic", sans-serif;
+      background: #16140f;
+      color: #efe6c9;
+      min-height: 100vh;
+    }
+    .hall {
+      position: fixed;
+      inset: 0;
+      background:
+        linear-gradient(90deg, #0d0c09 0%, transparent 18%, transparent 82%, #0d0c09 100%),
+        repeating-linear-gradient(90deg, #1d1b14 0 48px, #242117 48px 96px),
+        #16140f;
+      z-index: -2;
+    }
+    .flicker {
+      position: fixed;
+      inset: 0;
+      background: radial-gradient(ellipse at 50% 0%, rgba(255, 236, 170, .16), transparent 55%);
+      animation: flicker 3.8s infinite;
+      pointer-events: none;
+      z-index: -1;
+    }
+    @keyframes flicker {
+      0%, 19%, 21%, 100% { opacity: 1; }
+      20% { opacity: .35; }
+      50% { opacity: .85; }
+      51% { opacity: 1; }
+    }
+    nav {
+      display:flex; justify-content:space-between; align-items:center;
+      padding: 12px 18px;
+      background: #1b1912;
+      border-bottom: 3px solid #3a3728;
+      position: sticky; top:0; z-index:5;
+    }
+    .brand small {
+      display:block;
+      font-family: "Share Tech Mono", monospace;
+      color:#b8aa6a;
+      letter-spacing:.16em;
+      font-size:11px;
+    }
+    .nav-actions { display:flex; gap:6px; flex-wrap:wrap; }
+    .btn {
+      text-decoration:none; color:#efe6c9; font-size:12px;
+      border:1px solid #6a6244; padding:7px 10px; background:#211f16;
+    }
+    .btn.primary { background:#efe6c9; color:#1a180f; font-weight:800; border-color:#efe6c9; }
+    main { max-width: 980px; margin: 0 auto; padding: 24px 14px 80px; }
+    .sign {
+      font-family: "Share Tech Mono", monospace;
+      letter-spacing: .28em;
+      font-size: 12px;
+      color: #c7b56a;
+      border: 1px solid #6a6244;
+      display: inline-block;
+      padding: 4px 10px;
+      margin-bottom: 12px;
+    }
+    .hero {
+      border: 2px solid #4a4634;
+      background: #1c1a13;
+      padding: 28px 22px;
+      box-shadow: inset 0 0 0 6px #15130e;
+    }
+    h1 { font-size: clamp(26px, 4.6vw, 42px); margin: 8px 0 12px; }
+    .hero p { color:#d6ccaa; line-height:1.8; max-width: 40em; }
+    .meter {
+      margin-top: 18px;
+      width: 140px;
+      background:#11100c;
+      border:1px solid #6a6244;
+      padding: 12px;
+      font-family:"Share Tech Mono", monospace;
+    }
+    .meter b { font-size: 28px; }
+    .search {
+      margin: 22px 0 32px;
+      padding: 24px;
+      background: #19170f;
+      border: 1px dashed #6a6244;
+      text-align:center;
+    }
+    .label {
+      font-family:"Share Tech Mono", monospace;
+      letter-spacing:.2em;
+      font-size:11px;
+      color:#c7b56a;
+      margin: 0 0 10px;
+    }
+    .row { display:grid; gap:10px; margin-bottom:28px; }
+    @media (min-width: 760px) { .row { grid-template-columns: repeat(3,1fr); } }
+    .card {
+      background:#1c1a13;
+      border:1px solid #3f3b2b;
+      padding:16px;
+    }
+    .card h3 { margin:6px 0 8px; font-size:16px; }
+    .card p { margin:0; color:#b7ae90; font-size:13px; line-height:1.7; }
+    .meta { margin-top:12px; font-size:12px; display:flex; justify-content:space-between; color:#d0c49a; }
+    .foot { display:grid; gap:10px; }
+    @media (min-width: 760px) { .foot { grid-template-columns: repeat(3,1fr); } }
+    .back { position:fixed; left:16px; bottom:16px; background:#111; color:#efe6c9; text-decoration:none; padding:8px 12px; font-size:12px; border:1px solid #665; z-index:10; }
+  </style>
+</head>
+<body>
+  <div class="hall"></div>
+  <div class="flicker"></div>
+  <nav>
+    <div class="brand">
+      <b>メグリミナル</b>
+      <small>SECTOR C · CORRIDOR 12</small>
+    </div>
+    <div class="nav-actions">
+      <a class="btn" href="#">ランキング</a>
+      <a class="btn" href="#">保存</a>
+      <a class="btn primary" href="#">投稿する</a>
+      <a class="btn" href="#">ログイン</a>
+    </div>
+  </nav>
+  <main>
+    <section class="hero">
+      <div class="sign">NOTICE · 今週のイチオシ</div>
+      <h1>Cursor（AIコードエディタ）</h1>
+      <p>VSCodeベースのAI統合エディタ。プロンプト一つでコード生成・リファクタリングが可能。開発速度が劇的に上がりました。</p>
+      <a class="btn primary" href="#" style="display:inline-block;margin-top:14px">詳細を見る</a>
+      <div class="meter">LIKES<br><b>30</b></div>
+    </section>
+    <section class="search">
+      <div class="label">DIRECTORY SEARCH</div>
+      <h2>あなたのおすすめを見つけよう</h2>
+      <p>キーワード、カテゴリ、タグを組み合わせて、誰かの熱量を探す。</p>
+      <a class="btn primary" href="#" style="display:inline-block;margin-top:12px">すべての投稿を検索する</a>
+    </section>
+    <div class="label">新着投稿</div>
+    <div class="row">
+      <article class="card"><div class="label">YouTube</div><h3>ゆる言語学ラジオ</h3><p>言語学をテーマにした解説チャンネル。話し手2人のテンポが心地よい。</p><div class="meta"><span>👨‍💻 Taro</span><span>♥ 15</span></div></article>
+      <article class="card"><div class="label">アプリ</div><h3>Cursor（AIコードエディタ）</h3><p>プロンプト一つでコード生成。開発速度が劇的に上がりました。</p><div class="meta"><span>👨‍💻 Taro</span><span>♥ 30</span></div></article>
+      <article class="card"><div class="label">本</div><h3>「火花」- 又吉直樹</h3><p>笑いと切なさが交錯する世界観に引き込まれました。</p><div class="meta"><span>📚 Yuki</span><span>♥ 8</span></div></article>
+    </div>
+    <div class="label">人気の投稿</div>
+    <div class="row">
+      <article class="card"><div class="label">映画</div><h3>インセプション</h3><p>何度観ても新しい発見があります。音響設計も完璧。</p><div class="meta"><span>🎬 Jiro</span><span>♥ 20</span></div></article>
+      <article class="card"><div class="label">本</div><h3>「三体」- 劉慈欣</h3><p>スケールが圧倒的で、物理法則すら武器にするアイデア。</p><div class="meta"><span>👩‍🎨 Hanako</span><span>♥ 25</span></div></article>
+      <article class="card"><div class="label">YouTube</div><h3>リュウジのバズレシピ</h3><p>再現性が高く、材料も手に入りやすい時短シリーズ。</p><div class="meta"><span>👩‍🎨 Hanako</span><span>♥ 12</span></div></article>
+    </div>
+    <div class="foot">
+      <div class="card"><h3>このサイトについて</h3><p>SNSのアルゴリズムに疲れたあなたへ。純粋な「人のおすすめ」に出会える場所です。</p></div>
+      <div class="card"><h3>開発方針</h3><p>画面を先に完成させ、データベースはその後に確定します。</p></div>
+      <div class="card"><h3>スマホ対応</h3><p>スマホブラウザでの閲覧に対応しています。ネイティブアプリは対象外です。</p></div>
+    </div>
+  </main>
+  <a class="back" href="./index.html">← 案一覧</a>
+</body>
+</html>

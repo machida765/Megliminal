@@ -1,3 +1,5 @@
-# okini
+# メグリミナル（Meguriminal）
 
-This is a Next.js project. More details will be added later.
+アルゴリズムに頼らず、人のおすすめに出会える Web アプリ。
+
+Next.js プロジェクト。詳細は `設計書/` を参照。

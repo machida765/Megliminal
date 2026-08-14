@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>メグリミナル — 無限プール</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@400;500;700;900&family=IBM+Plex+Sans:wght@400;600&display=swap" rel="stylesheet" />
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: "Zen Maru Gothic", sans-serif;
+      color: #e8fffb;
+      background: #03201f;
+      min-height: 100vh;
+    }
+    .water {
+      position: fixed;
+      inset: 0;
+      background:
+        linear-gradient(180deg, #063a38 0%, #021716 42%, #010c0c 100%);
+      z-index: -2;
+    }
+    .caustic {
+      position: fixed;
+      inset: 0;
+      background:
+        radial-gradient(ellipse at 20% 10%, rgba(90,255,230,.18), transparent 40%),
+        radial-gradient(ellipse at 80% 0%, rgba(80,180,255,.12), transparent 35%),
+        repeating-linear-gradient(115deg, transparent 0 18px, rgba(120,255,230,.04) 18px 36px);
+      z-index: -1;
+    }
+    nav {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 14px 22px;
+      background: rgba(2, 24, 24, .55);
+      border-bottom: 1px solid rgba(120,255,230,.15);
+      backdrop-filter: blur(10px);
+      position: sticky;
+      top: 0;
+      z-index: 5;
+    }
+    .brand b { font-size: 18px; }
+    .brand small { display:block; color:#7fbdb6; font-size:11px; letter-spacing:.18em; }
+    .nav-actions { display:flex; gap:8px; flex-wrap:wrap; }
+    .btn {
+      text-decoration:none; color:#e8fffb; font-size:13px;
+      border:1px solid rgba(160,255,236,.25); border-radius:10px; padding:8px 12px;
+    }
+    .btn.primary { background:#7ff5e0; color:#032422; font-weight:800; border:none; }
+    main { max-width: 1040px; margin: 0 auto; padding: 28px 16px 80px; }
+    .hero {
+      position: relative;
+      overflow: hidden;
+      border-radius: 8px 8px 80px 8px;
+      padding: 40px 28px 48px;
+      background:
+        linear-gradient(180deg, rgba(8,70,68,.55), rgba(2,20,20,.7)),
+        repeating-linear-gradient(90deg, rgba(255,255,255,.04) 0 40px, transparent 40px 80px);
+      border: 1px solid rgba(127,245,224,.2);
+      box-shadow: 0 30px 80px rgba(0,0,0,.35);
+    }
+    .lights {
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 18px;
+      background: repeating-linear-gradient(90deg, #d9fff6 0 46px, #063a38 46px 90px);
+      opacity: .35;
+    }
+    .kicker { font-family:"IBM Plex Sans",sans-serif; letter-spacing:.3em; font-size:11px; color:#8fffe8; }
+    h1 { font-size: clamp(30px, 5vw, 52px); margin: 12px 0 12px; }
+    .hero p { max-width: 38em; line-height: 1.85; color:#c8efe8; }
+    .count {
+      margin-top: 22px;
+      width: 120px; height: 120px;
+      border-radius: 50%;
+      border: 8px solid rgba(127,245,224,.25);
+      display:grid; place-items:center; text-align:center;
+      background: rgba(0,20,20,.4);
+    }
+    .count b { font-size: 32px; display:block; }
+    .search {
+      margin: 28px 0 40px;
+      padding: 32px 20px;
+      text-align: center;
+      background: rgba(0,0,0,.18);
+      border: 1px solid rgba(127,245,224,.15);
+      border-radius: 4px 40px;
+    }
+    .row { display:grid; gap:14px; margin-bottom:40px; }
+    @media (min-width: 760px) { .row { grid-template-columns: repeat(3,1fr); } }
+    .card {
+      background: rgba(4, 28, 28, .72);
+      border: 1px solid rgba(127,245,224,.12);
+      padding: 18px;
+      border-radius: 4px 18px 4px 18px;
+    }
+    .tag { font-size:11px; color:#8fffe8; letter-spacing:.12em; }
+    .card h3 { margin: 8px 0; }
+    .card p { margin:0; color:#9dcdc6; font-size:13px; line-height:1.7; }
+    .meta { margin-top:12px; font-size:12px; color:#b7e6de; display:flex; justify-content:space-between; }
+    .label { letter-spacing:.22em; font-size:11px; color:#8fffe8; margin-bottom:12px; }
+    .foot { display:grid; gap:14px; }
+    @media (min-width: 760px) { .foot { grid-template-columns: repeat(3,1fr); } }
+    .back { position:fixed; left:16px; bottom:16px; background:#021616; color:#fff; text-decoration:none; padding:8px 12px; border-radius:999px; font-size:12px; border:1px solid #245; z-index:10; }
+  </style>
+</head>
+<body>
+  <div class="water"></div>
+  <div class="caustic"></div>
+  <nav>
+    <div class="brand">
+      <b>メグリミナル</b>
+      <small>INDOOR POOL · OPEN 24H</small>
+    </div>
+    <div class="nav-actions">
+      <a class="btn" href="#">ランキング</a>
+      <a class="btn" href="#">保存</a>
+      <a class="btn primary" href="#">投稿する</a>
+      <a class="btn" href="#">ログイン</a>
+    </div>
+  </nav>
+  <main>
+    <section class="hero">
+      <div class="lights"></div>
+      <div class="kicker">DEPTH 1.2M · 今週のイチオシ</div>
+      <h1>Cursor（AIコードエディタ）</h1>
+      <p>VSCodeベースのAI統合エディタ。プロンプト一つでコード生成・リファクタリングが可能。開発速度が劇的に上がりました。</p>
+      <a class="btn primary" href="#" style="display:inline-block;margin-top:16px">詳細を見る</a>
+      <div class="count"><b>30</b><span>いいね</span></div>
+    </section>
+    <section class="search">
+      <div class="kicker">FIND A LANE</div>
+      <h2>あなたのおすすめを見つけよう</h2>
+      <p>キーワード、カテゴリ、タグを組み合わせて、誰かの熱量を探す。</p>
+      <a class="btn primary" href="#" style="display:inline-block;margin-top:14px">すべての投稿を検索する</a>
+    </section>
+    <div class="label">新着投稿</div>
+    <div class="row">
+      <article class="card"><div class="tag">YouTube</div><h3>ゆる言語学ラジオ</h3><p>言語学をテーマにした解説チャンネル。話し手2人のテンポが心地よい。</p><div class="meta"><span>👨‍💻 Taro</span><span>♥ 15</span></div></article>
+      <article class="card"><div class="tag">アプリ</div><h3>Cursor（AIコードエディタ）</h3><p>プロンプト一つでコード生成。開発速度が劇的に上がりました。</p><div class="meta"><span>👨‍💻 Taro</span><span>♥ 30</span></div></article>
+      <article class="card"><div class="tag">本</div><h3>「火花」- 又吉直樹</h3><p>笑いと切なさが交錯する世界観に引き込まれました。</p><div class="meta"><span>📚 Yuki</span><span>♥ 8</span></div></article>
+    </div>
+    <div class="label">人気の投稿</div>
+    <div class="row">
+      <article class="card"><div class="tag">映画</div><h3>インセプション</h3><p>何度観ても新しい発見があります。音響設計も完璧。</p><div class="meta"><span>🎬 Jiro</span><span>♥ 20</span></div></article>
+      <article class="card"><div class="tag">本</div><h3>「三体」- 劉慈欣</h3><p>スケールが圧倒的で、物理法則すら武器にするアイデア。</p><div class="meta"><span>👩‍🎨 Hanako</span><span>♥ 25</span></div></article>
+      <article class="card"><div class="tag">YouTube</div><h3>リュウジのバズレシピ</h3><p>再現性が高く、材料も手に入りやすい時短シリーズ。</p><div class="meta"><span>👩‍🎨 Hanako</span><span>♥ 12</span></div></article>
+    </div>
+    <div class="foot">
+      <div class="card"><h3>このサイトについて</h3><p>SNSのアルゴリズムに疲れたあなたへ。純粋な「人のおすすめ」に出会える場所です。</p></div>
+      <div class="card"><h3>開発方針</h3><p>画面を先に完成させ、データベースはその後に確定します。</p></div>
+      <div class="card"><h3>スマホ対応</h3><p>スマホブラウザでの閲覧に対応しています。ネイティブアプリは対象外です。</p></div>
+    </div>
+  </main>
+  <a class="back" href="./index.html">← 案一覧</a>
+</body>
+</html>

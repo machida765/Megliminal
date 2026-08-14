@@ -1,16 +1,20 @@
-// components/LoginForm.tsx
-
 'use client';
 
 import { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
+import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { useAuth } from '@/components/providers/AuthProvider';
 
 export function LoginForm() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const { signInWithPassword } = useAuth();
+  const redirectTo = searchParams.get('redirect') || '/';
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [errorMessage, setErrorMessage] = useState('');
 
   const [formData, setFormData] = useState({
     email: '',
@@ -27,20 +31,26 @@ export function LoginForm() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setErrorMessage('');
 
     if (!formData.email || !formData.password) {
-      alert('メールアドレスとパスワードを入力してください');
+      setErrorMessage('メールアドレスとパスワードを入力してください');
       return;
     }
 
     setIsSubmitting(true);
 
-    // ダミー認証（実装は Phase 2 で Supabase に置き換え）
-    setTimeout(() => {
-      alert(`ログインしました: ${formData.email}`);
-      setIsSubmitting(false);
-      router.push('/');
-    }, 800);
+    const result = await signInWithPassword(formData.email, formData.password);
+
+    setIsSubmitting(false);
+
+    if (result.error) {
+      setErrorMessage(result.error);
+      return;
+    }
+
+    router.push(redirectTo);
+    router.refresh();
   };
 
   return (
@@ -52,7 +62,6 @@ export function LoginForm() {
 
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
-            {/* メールアドレス */}
             <div className="space-y-2">
               <label className="block text-sm font-semibold">
                 メールアドレス
@@ -66,7 +75,6 @@ export function LoginForm() {
               />
             </div>
 
-            {/* パスワード */}
             <div className="space-y-2">
               <label className="block text-sm font-semibold">
                 パスワード
@@ -80,7 +88,10 @@ export function LoginForm() {
               />
             </div>
 
-            {/* ログインボタン */}
+            {errorMessage && (
+              <p className="text-sm text-red-600">{errorMessage}</p>
+            )}
+
             <Button
               type="submit"
               disabled={isSubmitting}
@@ -90,19 +101,11 @@ export function LoginForm() {
             </Button>
           </form>
 
-          {/* Phase 2への案内 */}
-          <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mt-6">
-            <p className="text-sm text-yellow-900">
-              ⚠️ <strong>開発中:</strong> 現在はダミー認証です。Phase 2でSupabase認証に置き換わります。
-            </p>
-          </div>
-
-          {/* サインアップへのリンク */}
           <div className="text-center mt-4 text-sm text-gray-600">
             アカウントをお持ちでない方は
-            <span className="text-blue-600 font-semibold ml-1">
-              サインアップしてください
-            </span>
+            <Link href="/signup" className="text-orange-600 font-semibold ml-1">
+              新規登録
+            </Link>
           </div>
         </CardContent>
       </Card>

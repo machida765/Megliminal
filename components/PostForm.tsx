@@ -1,121 +1,143 @@
-// components/PostForm.tsx
-
 'use client';
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Category, Post } from '@/types';
+import { Post } from '@/types';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { POSTS, USERS } from '@/data/dummy';
+import { CategoryPicker } from '@/components/CategoryPicker';
+import { getRepository } from '@/lib/data';
+import { useAuth } from '@/components/providers/AuthProvider';
+import { useMajorCategories, useSubCategories } from '@/lib/data/hooks';
 
 interface PostFormProps {
-  categories: Category[];
+  initialPost?: Post;
   onSubmit?: (post: Post) => void;
 }
 
-export function PostForm({ categories, onSubmit }: PostFormProps) {
+export function PostForm({ initialPost, onSubmit }: PostFormProps) {
   const router = useRouter();
+  const { user } = useAuth();
+  const { categories } = useMajorCategories();
+  const { subCategories } = useSubCategories();
+  const isEdit = Boolean(initialPost);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const [formData, setFormData] = useState({
-    categoryId: '',
-    title: '',
-    description: '',
-    url: '',
+    majorCategoryId: initialPost?.majorCategoryId ?? '',
+    subCategoryId: initialPost?.subCategoryId ?? null as string | null,
+    title: initialPost?.title ?? '',
+    description: initialPost?.description ?? '',
+    url: initialPost?.url ?? '',
   });
 
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
   ) => {
     const { name, value } = e.target;
-    setFormData((prev) => ({
-      ...prev,
-      [name]: value,
-    }));
-  };
-
-  const handleSelectChange = (value: string) => {
-    setFormData((prev) => ({
-      ...prev,
-      categoryId: value,
-    }));
+    setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!formData.categoryId || !formData.title || !formData.description) {
+    if (!formData.majorCategoryId || !formData.title || !formData.description) {
       alert('必須項目を入力してください');
       return;
     }
 
-    setIsSubmitting(true);
-
-    // ダミーデータに投稿を追加（Phase 2でSupabaseに置き換え予定）
-    const newPost: Post = {
-      id: `post-${Date.now()}`,
-      userId: USERS[0].id, // ログイン機能実装まではダミーユーザーを使用
-      user: USERS[0],
-      categoryId: formData.categoryId,
-      title: formData.title,
-      description: formData.description,
-      url: formData.url || undefined,
-      createdAt: new Date().toISOString(),
-    };
-
-    // ダミーデータ配列に追加
-    POSTS.unshift(newPost);
-
-    if (onSubmit) {
-      onSubmit(newPost);
+    if (!user) {
+      alert('ログインが必要です');
+      router.push('/login?redirect=/create');
+      return;
     }
 
-    // 成功メッセージ
-    alert('投稿が公開されました！');
+    const repo = getRepository();
 
-    // ホームに戻る
-    router.push('/');
-    setIsSubmitting(false);
+    if (!isEdit) {
+      const frequency = await repo.checkPostFrequency(
+        user.id,
+        formData.majorCategoryId
+      );
+      if (!frequency.canPost) {
+        alert(
+          `このジャンルはあと${frequency.daysRemaining}日後に投稿できます。`
+        );
+        return;
+      }
+    }
+
+    setIsSubmitting(true);
+
+    try {
+      if (isEdit && initialPost) {
+        const updated = await repo.updatePost(initialPost.id, {
+          majorCategoryId: formData.majorCategoryId,
+          subCategoryId: formData.subCategoryId,
+          title: formData.title,
+          description: formData.description,
+          url: formData.url || undefined,
+        });
+        onSubmit?.(updated);
+        alert('投稿を更新しました');
+        router.push(`/post/${updated.id}`);
+      } else {
+        const newPost = await repo.createPost({
+          userId: user.id,
+          majorCategoryId: formData.majorCategoryId,
+          subCategoryId: formData.subCategoryId,
+          title: formData.title,
+          description: formData.description,
+          url: formData.url || undefined,
+        });
+        onSubmit?.(newPost);
+        alert('投稿が公開されました！');
+        router.push('/');
+      }
+    } catch {
+      alert('保存に失敗しました');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
     <Card>
       <CardHeader>
-        <CardTitle>新しいおすすめを投稿</CardTitle>
+        <CardTitle>
+          {isEdit ? '投稿を編集' : '新しいおすすめを投稿'}
+        </CardTitle>
       </CardHeader>
 
       <CardContent>
         <form onSubmit={handleSubmit} className="space-y-6">
-          {/* カテゴリ選択 */}
-          <div className="space-y-2">
-            <label className="block text-sm font-semibold">
-              カテゴリ <span className="text-red-500">*</span>
-            </label>
-            <Select value={formData.categoryId} onValueChange={handleSelectChange}>
-              <SelectTrigger>
-                <SelectValue placeholder="カテゴリを選択" />
-              </SelectTrigger>
-              <SelectContent>
-                {categories.map((category) => (
-                  <SelectItem key={category.id} value={category.id}>
-                    {category.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
+          <CategoryPicker
+            majorCategories={categories}
+            subCategories={subCategories}
+            majorCategoryId={formData.majorCategoryId || null}
+            subCategoryId={formData.subCategoryId}
+            onMajorChange={(majorCategoryId) =>
+              setFormData((prev) => ({
+                ...prev,
+                majorCategoryId: majorCategoryId ?? '',
+                subCategoryId:
+                  prev.subCategoryId &&
+                  subCategories.find((sub) => sub.id === prev.subCategoryId)
+                    ?.majorCategoryId === majorCategoryId
+                    ? prev.subCategoryId
+                    : null,
+              }))
+            }
+            onSubChange={(subCategoryId) =>
+              setFormData((prev) => ({ ...prev, subCategoryId }))
+            }
+            majorRequired
+            subOptional
+            subLabel="中ジャンル（任意）"
+          />
 
-          {/* タイトル */}
           <div className="space-y-2">
             <label className="block text-sm font-semibold">
               タイトル <span className="text-red-500">*</span>
@@ -128,21 +150,18 @@ export function PostForm({ categories, onSubmit }: PostFormProps) {
               placeholder="例: iPad Pro 12.9inch (2024)"
               maxLength={100}
             />
-            <p className="text-xs text-gray-500">
-              {formData.title.length} / 100
-            </p>
+            <p className="text-xs text-gray-500">{formData.title.length} / 100</p>
           </div>
 
-          {/* 説明・なぜおすすめ？ */}
           <div className="space-y-2">
             <label className="block text-sm font-semibold">
-              なぜおすすめ？（説明文）<span className="text-red-500">*</span>
+              なぜおすすめ？ <span className="text-red-500">*</span>
             </label>
             <Textarea
               name="description"
               value={formData.description}
               onChange={handleChange}
-              placeholder="あなたの熱量をぶつけてください。なぜこれをおすすめするのか、どんな魅力があるのか？を思う存分書いてください。"
+              placeholder="あなたの熱量をぶつけてください。"
               rows={6}
               maxLength={1000}
             />
@@ -151,11 +170,8 @@ export function PostForm({ categories, onSubmit }: PostFormProps) {
             </p>
           </div>
 
-          {/* URL（オプション） */}
           <div className="space-y-2">
-            <label className="block text-sm font-semibold">
-              リンク（オプション）
-            </label>
+            <label className="block text-sm font-semibold">リンク（任意）</label>
             <Input
               type="url"
               name="url"
@@ -163,35 +179,28 @@ export function PostForm({ categories, onSubmit }: PostFormProps) {
               onChange={handleChange}
               placeholder="https://example.com"
             />
-            <p className="text-xs text-gray-500">
-              公式サイト、購入ページ、予約サイトなどを貼り付けてください
-            </p>
           </div>
 
-          {/* 送信ボタン */}
-          <div className="pt-4 flex gap-3">
-            <Button
-              type="submit"
-              disabled={isSubmitting}
-              className="flex-1"
-            >
-              {isSubmitting ? '投稿中...' : '投稿する'}
+          <div className="pt-4 flex flex-col sm:flex-row gap-3">
+            <Button type="submit" disabled={isSubmitting} className="flex-1">
+              {isSubmitting
+                ? '保存中...'
+                : isEdit
+                  ? '更新する'
+                  : '投稿する'}
             </Button>
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => router.back()}
-            >
+            <Button type="button" variant="outline" onClick={() => router.back()}>
               キャンセル
             </Button>
           </div>
 
-          {/* 注意事項 */}
-          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-            <p className="text-sm text-blue-900">
-              ℹ️ <strong>ご注意:</strong> 現在ローカル開発中のため、投稿はブラウザを閉じるとリセットされます。Phase 2でSupabaseを導入した際に永続化されます。
-            </p>
-          </div>
+          {!isEdit && (
+            <div className="paper-note bg-[#fff7d6] p-4 rotate-1">
+              <p className="text-sm text-[#6a5344]">
+                大ジャンルごとに、1週間に1回まで投稿できます。中ジャンルは任意です。
+              </p>
+            </div>
+          )}
         </form>
       </CardContent>
     </Card>
