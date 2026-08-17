@@ -7,9 +7,10 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { CategoryPicker } from '@/components/CategoryPicker';
+import { CategoryPicker } from '@/components/search/CategoryPicker';
 import { getRepository } from '@/lib/data';
 import { useAuth } from '@/components/providers/AuthProvider';
+import { useTranslations } from '@/components/providers/LocaleProvider';
 import { useMajorCategories, useSubCategories } from '@/lib/data/hooks';
 
 interface PostFormProps {
@@ -19,6 +20,7 @@ interface PostFormProps {
 
 export function PostForm({ initialPost, onSubmit }: PostFormProps) {
   const router = useRouter();
+  const { t } = useTranslations();
   const { user } = useAuth();
   const { categories } = useMajorCategories();
   const { subCategories } = useSubCategories();
@@ -44,12 +46,12 @@ export function PostForm({ initialPost, onSubmit }: PostFormProps) {
     e.preventDefault();
 
     if (!formData.majorCategoryId || !formData.title || !formData.description) {
-      alert('必須項目を入力してください');
+      alert(t('post.requiredFields'));
       return;
     }
 
     if (!user) {
-      alert('ログインが必要です');
+      alert(t('auth.errors.loginRequired'));
       router.push('/login?redirect=/create');
       return;
     }
@@ -63,7 +65,7 @@ export function PostForm({ initialPost, onSubmit }: PostFormProps) {
       );
       if (!frequency.canPost) {
         alert(
-          `このジャンルはあと${frequency.daysRemaining}日後に投稿できます。`
+          t('post.frequencyBlocked', { days: frequency.daysRemaining ?? 0 })
         );
         return;
       }
@@ -81,7 +83,7 @@ export function PostForm({ initialPost, onSubmit }: PostFormProps) {
           url: formData.url || undefined,
         });
         onSubmit?.(updated);
-        alert('投稿を更新しました');
+        alert(t('post.updated'));
         router.push(`/post/${updated.id}`);
       } else {
         const newPost = await repo.createPost({
@@ -93,11 +95,11 @@ export function PostForm({ initialPost, onSubmit }: PostFormProps) {
           url: formData.url || undefined,
         });
         onSubmit?.(newPost);
-        alert('投稿が公開されました！');
+        alert(t('post.published'));
         router.push('/');
       }
     } catch {
-      alert('保存に失敗しました');
+      alert(t('post.saveFailed'));
     } finally {
       setIsSubmitting(false);
     }
@@ -106,9 +108,7 @@ export function PostForm({ initialPost, onSubmit }: PostFormProps) {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>
-          {isEdit ? '投稿を編集' : '新しいおすすめを投稿'}
-        </CardTitle>
+        <CardTitle>{isEdit ? t('post.editTitle') : t('post.newTitle')}</CardTitle>
       </CardHeader>
 
       <CardContent>
@@ -135,19 +135,18 @@ export function PostForm({ initialPost, onSubmit }: PostFormProps) {
             }
             majorRequired
             subOptional
-            subLabel="中ジャンル（任意）"
           />
 
           <div className="space-y-2">
             <label className="block text-sm font-semibold">
-              タイトル <span className="text-red-500">*</span>
+              {t('post.titleLabel')} <span className="text-red-500">*</span>
             </label>
             <Input
               type="text"
               name="title"
               value={formData.title}
               onChange={handleChange}
-              placeholder="例: iPad Pro 12.9inch (2024)"
+              placeholder={t('post.titlePlaceholder')}
               maxLength={100}
             />
             <p className="text-xs text-gray-500">{formData.title.length} / 100</p>
@@ -155,13 +154,13 @@ export function PostForm({ initialPost, onSubmit }: PostFormProps) {
 
           <div className="space-y-2">
             <label className="block text-sm font-semibold">
-              なぜおすすめ？ <span className="text-red-500">*</span>
+              {t('post.whyRecommend')} <span className="text-red-500">*</span>
             </label>
             <Textarea
               name="description"
               value={formData.description}
               onChange={handleChange}
-              placeholder="あなたの熱量をぶつけてください。"
+              placeholder={t('post.descriptionPlaceholder')}
               rows={6}
               maxLength={1000}
             />
@@ -171,7 +170,7 @@ export function PostForm({ initialPost, onSubmit }: PostFormProps) {
           </div>
 
           <div className="space-y-2">
-            <label className="block text-sm font-semibold">リンク（任意）</label>
+            <label className="block text-sm font-semibold">{t('post.linkOptional')}</label>
             <Input
               type="url"
               name="url"
@@ -184,21 +183,19 @@ export function PostForm({ initialPost, onSubmit }: PostFormProps) {
           <div className="pt-4 flex flex-col sm:flex-row gap-3">
             <Button type="submit" disabled={isSubmitting} className="flex-1">
               {isSubmitting
-                ? '保存中...'
+                ? t('post.saving')
                 : isEdit
-                  ? '更新する'
-                  : '投稿する'}
+                  ? t('post.update')
+                  : t('post.submit')}
             </Button>
             <Button type="button" variant="outline" onClick={() => router.back()}>
-              キャンセル
+              {t('common.cancel')}
             </Button>
           </div>
 
           {!isEdit && (
             <div className="paper-note bg-[#fff7d6] p-4 rotate-1">
-              <p className="text-sm text-[#6a5344]">
-                大ジャンルごとに、1週間に1回まで投稿できます。中ジャンルは任意です。
-              </p>
+              <p className="text-sm text-[#6a5344]">{t('post.frequencyNote')}</p>
             </div>
           )}
         </form>

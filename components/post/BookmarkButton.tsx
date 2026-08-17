@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { Bookmark } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/components/providers/AuthProvider';
+import { useTranslations } from '@/components/providers/LocaleProvider';
 import { getRepository } from '@/lib/data';
 
 interface BookmarkButtonProps {
@@ -13,6 +14,7 @@ interface BookmarkButtonProps {
 }
 
 export function BookmarkButton({ postId, className }: BookmarkButtonProps) {
+  const { t } = useTranslations();
   const { user } = useAuth();
   const [bookmarked, setBookmarked] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -29,7 +31,7 @@ export function BookmarkButton({ postId, className }: BookmarkButtonProps) {
       <Button asChild variant="outline" size="sm" className={className}>
         <Link href={`/login?redirect=/post/${postId}`}>
           <Bookmark className="w-4 h-4" />
-          保存
+          {t('post.bookmark')}
         </Link>
       </Button>
     );
@@ -58,7 +60,7 @@ export function BookmarkButton({ postId, className }: BookmarkButtonProps) {
       onClick={toggle}
     >
       <Bookmark className={`w-4 h-4 ${bookmarked ? 'fill-current' : ''}`} />
-      {bookmarked ? '保存済み' : '保存'}
+      {bookmarked ? t('post.bookmarked') : t('post.bookmark')}
     </Button>
   );
 }

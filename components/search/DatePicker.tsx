@@ -3,9 +3,9 @@
 import { useEffect, useId, useRef, useState } from 'react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { Input } from '@/components/ui/input';
+import { useTranslations } from '@/components/providers/LocaleProvider';
 import { cn } from '@/lib/utils';
 import {
-  WEEKDAY_LABELS,
   formatIsoAsSlash,
   getCalendarCells,
   getYearOptions,
@@ -24,9 +24,11 @@ type DatePickerProps = {
 export function DatePicker({
   value,
   onChange,
-  placeholder = 'yyyy/mm/dd',
+  placeholder,
   'aria-label': ariaLabel,
 }: DatePickerProps) {
+  const { t, messages } = useTranslations();
+  const placeholderText = placeholder ?? t('date.placeholder');
   const rootRef = useRef<HTMLDivElement>(null);
   const listboxId = useId();
   const today = new Date();
@@ -113,7 +115,7 @@ export function DatePicker({
         type="text"
         inputMode="numeric"
         value={text}
-        placeholder={placeholder}
+        placeholder={placeholderText}
         aria-label={ariaLabel}
         aria-expanded={open}
         aria-controls={listboxId}
@@ -135,7 +137,7 @@ export function DatePicker({
         <div
           id={listboxId}
           role="dialog"
-          aria-label="日付を選択"
+          aria-label={t('date.pickDate')}
           className="absolute left-0 top-full z-50 mt-1 w-[min(100vw-2rem,20rem)] border border-[#e4d2b8] bg-white shadow-[0_8px_24px_rgba(59,42,34,0.12)]"
         >
           <div className="flex items-center gap-1 bg-[#c45c28] px-2 py-2 text-white">
@@ -143,7 +145,7 @@ export function DatePicker({
               type="button"
               onClick={() => shiftMonth(-1)}
               className="inline-flex h-8 w-8 items-center justify-center hover:bg-white/15"
-              aria-label="前の月"
+              aria-label={t('date.prevMonth')}
             >
               <ChevronLeft className="h-4 w-4" />
             </button>
@@ -152,11 +154,11 @@ export function DatePicker({
               value={viewYear}
               onChange={(e) => setViewYear(Number(e.target.value))}
               className="h-8 min-w-0 flex-1 bg-white px-2 text-sm font-bold text-[#3b2a22] border-0"
-              aria-label="年"
+              aria-label={t('date.year')}
             >
               {yearOptions.map((year) => (
                 <option key={year} value={year}>
-                  {year}年
+                  {t('date.yearOption', { year })}
                 </option>
               ))}
             </select>
@@ -165,11 +167,11 @@ export function DatePicker({
               value={viewMonth}
               onChange={(e) => setViewMonth(Number(e.target.value))}
               className="h-8 min-w-0 flex-1 bg-white px-2 text-sm font-bold text-[#3b2a22] border-0"
-              aria-label="月"
+              aria-label={t('date.month')}
             >
               {Array.from({ length: 12 }, (_, i) => i + 1).map((month) => (
                 <option key={month} value={month}>
-                  {month}月
+                  {t('date.monthOption', { month })}
                 </option>
               ))}
             </select>
@@ -178,14 +180,14 @@ export function DatePicker({
               type="button"
               onClick={() => shiftMonth(1)}
               className="inline-flex h-8 w-8 items-center justify-center hover:bg-white/15"
-              aria-label="次の月"
+              aria-label={t('date.nextMonth')}
             >
               <ChevronRight className="h-4 w-4" />
             </button>
           </div>
 
           <div className="grid grid-cols-7 border-b border-[#efe3d2] bg-[#fffaf2]">
-            {WEEKDAY_LABELS.map((label, index) => (
+            {messages.date.weekdays.map((label, index) => (
               <div
                 key={label}
                 className={cn(
@@ -239,7 +241,7 @@ export function DatePicker({
               onClick={() => setOpen(false)}
               className="text-sm font-bold text-[#c45c28] hover:text-[#a34a20]"
             >
-              閉じる
+              {t('common.close')}
             </button>
           </div>
         </div>

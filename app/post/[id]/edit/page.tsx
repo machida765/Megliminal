@@ -2,9 +2,10 @@
 
 import { use } from 'react';
 import Link from 'next/link';
-import { PostForm } from '@/components/PostForm';
+import { PostForm } from '@/components/post/PostForm';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/components/providers/AuthProvider';
+import { useTranslations } from '@/components/providers/LocaleProvider';
 import { usePost } from '@/lib/data/hooks';
 
 interface EditPostPageProps {
@@ -13,6 +14,7 @@ interface EditPostPageProps {
 
 export default function EditPostPage({ params }: EditPostPageProps) {
   const { id } = use(params);
+  const { t } = useTranslations();
   const { post, loading } = usePost(id);
   const { user } = useAuth();
 
@@ -21,7 +23,7 @@ export default function EditPostPage({ params }: EditPostPageProps) {
   if (loading) {
     return (
       <div className="max-w-2xl mx-auto px-4 py-20 text-center text-gray-500">
-        読み込み中...
+        {t('common.loading')}
       </div>
     );
   }
@@ -29,9 +31,9 @@ export default function EditPostPage({ params }: EditPostPageProps) {
   if (!post) {
     return (
       <div className="max-w-2xl mx-auto px-4 py-12 text-center">
-        <p className="text-gray-600 mb-4">投稿が見つかりません</p>
+        <p className="text-gray-600 mb-4">{t('post.notFound')}</p>
         <Button asChild>
-          <Link href="/">ホームに戻る</Link>
+          <Link href="/">{t('common.backToHome')}</Link>
         </Button>
       </div>
     );
@@ -40,9 +42,9 @@ export default function EditPostPage({ params }: EditPostPageProps) {
   if (!isOwner) {
     return (
       <div className="max-w-2xl mx-auto px-4 py-12 text-center">
-        <p className="text-gray-600 mb-4">この投稿を編集する権限がありません</p>
+        <p className="text-gray-600 mb-4">{t('post.noEditPermission')}</p>
         <Button asChild>
-          <Link href={`/post/${id}`}>投稿に戻る</Link>
+          <Link href={`/post/${id}`}>{t('post.backToPost')}</Link>
         </Button>
       </div>
     );
@@ -50,7 +52,7 @@ export default function EditPostPage({ params }: EditPostPageProps) {
 
   return (
     <div className="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-      <h1 className="text-3xl font-bold text-orange-950 mb-6">投稿を編集</h1>
+      <h1 className="text-3xl font-bold text-orange-950 mb-6">{t('post.editTitle')}</h1>
       <PostForm initialPost={post} />
     </div>
   );

@@ -1,7 +1,8 @@
 'use client';
 
-import { RANKING_PERIOD_LABELS, type RankingPeriod } from '@/types';
+import type { RankingPeriod } from '@/types';
 import { Button } from '@/components/ui/button';
+import { useTranslations } from '@/components/providers/LocaleProvider';
 
 interface PeriodFilterProps {
   value: RankingPeriod;
@@ -11,6 +12,8 @@ interface PeriodFilterProps {
 const PERIODS: RankingPeriod[] = ['all', 'month', 'week'];
 
 export function PeriodFilter({ value, onChange }: PeriodFilterProps) {
+  const { messages } = useTranslations();
+
   return (
     <div className="flex flex-wrap gap-2">
       {PERIODS.map((period) => (
@@ -21,7 +24,7 @@ export function PeriodFilter({ value, onChange }: PeriodFilterProps) {
           variant={value === period ? 'flat' : 'flat-outline'}
           onClick={() => onChange(period)}
         >
-          {RANKING_PERIOD_LABELS[period]}
+          {messages.ranking.period[period]}
         </Button>
       ))}
     </div>

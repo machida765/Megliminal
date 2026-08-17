@@ -7,6 +7,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { useTranslations } from '@/components/providers/LocaleProvider';
 import type { MajorCategory, SubCategory } from '@/types';
 
 const ALL = '__all__';
@@ -21,9 +22,7 @@ type CategoryPickerProps = {
   onSubChange: (subCategoryId: string | null) => void;
   majorLabel?: string;
   subLabel?: string;
-  /** 投稿フォーム用。中ジャンル未選択を許可する */
   subOptional?: boolean;
-  /** 投稿フォーム用。大ジャンルを必須にする */
   majorRequired?: boolean;
 };
 
@@ -34,11 +33,16 @@ export function CategoryPicker({
   subCategoryId,
   onMajorChange,
   onSubChange,
-  majorLabel = '大ジャンル',
-  subLabel = '小ジャンル',
+  majorLabel,
+  subLabel,
   subOptional = false,
   majorRequired = false,
 }: CategoryPickerProps) {
+  const { t } = useTranslations();
+  const majorLabelText = majorLabel ?? t('category.major');
+  const subLabelText =
+    subLabel ?? (subOptional ? t('category.subOptional') : t('category.sub'));
+
   const activeMajorCategories = majorCategories.filter((c) => c.isActive);
   const availableSubs = subCategories.filter(
     (sub) =>
@@ -50,12 +54,12 @@ export function CategoryPicker({
     subCategories.some((sub) => sub.isActive && sub.majorCategoryId === major.id)
   );
 
-  const handleMajorChange = (value: string) => {
-    const nextMajor = majorRequired
-      ? value || null
-      : !value || value === ALL
-        ? null
-        : value;
+  const handleMajorChange = (value: string | null) => {
+    if (!value) {
+      onMajorChange(null);
+      return;
+    }
+    const nextMajor = majorRequired ? value : value === ALL ? null : value;
     onMajorChange(nextMajor);
     if (
       subCategoryId &&
@@ -66,7 +70,7 @@ export function CategoryPicker({
     }
   };
 
-  const handleSubChange = (value: string) => {
+  const handleSubChange = (value: string | null) => {
     if (!value || value === ALL || value === NONE) {
       onSubChange(null);
       return;
@@ -74,23 +78,33 @@ export function CategoryPicker({
     onSubChange(value);
   };
 
+  const majorSelectValue = majorCategoryId ?? undefined;
+  const subSelectValue = subCategoryId ?? undefined;
+  const selectedMajor = activeMajorCategories.find((c) => c.id === majorCategoryId);
+  const selectedSub = availableSubs.find((s) => s.id === subCategoryId);
+
   return (
     <div className="space-y-4">
       <div>
-        <p className="text-xs font-bold text-[#8a6a52] mb-2">{majorLabel}</p>
-        <Select
-          value={majorCategoryId ?? (majorRequired ? '' : ALL)}
-          onValueChange={handleMajorChange}
-        >
-          <SelectTrigger className="w-full bg-white border-[#e4d2b8]">
-            <SelectValue placeholder={majorRequired ? '大ジャンルを選択' : 'すべてのカテゴリ'} />
+        <p className="text-xs font-bold text-[#8a6a52] mb-2">{majorLabelText}</p>
+        <Select value={majorSelectValue} onValueChange={handleMajorChange}>
+          <SelectTrigger className="w-full min-w-0 bg-white border-[#e4d2b8]">
+            <SelectValue
+              placeholder={
+                majorRequired ? t('category.selectMajor') : t('category.allCategories')
+              }
+            >
+              {selectedMajor?.name}
+            </SelectValue>
           </SelectTrigger>
           <SelectContent>
             {!majorRequired && (
-              <SelectItem value={ALL}>すべてのカテゴリ</SelectItem>
+              <SelectItem value={ALL} label={t('category.allCategories')}>
+                {t('category.allCategories')}
+              </SelectItem>
             )}
             {activeMajorCategories.map((category) => (
-              <SelectItem key={category.id} value={category.id}>
+              <SelectItem key={category.id} value={category.id} label={category.name}>
                 {category.name}
               </SelectItem>
             ))}
@@ -100,37 +114,39 @@ export function CategoryPicker({
 
       {hasSubs && (
         <div>
-          <p className="text-xs font-bold text-[#8a6a52] mb-2">{subLabel}</p>
+          <p className="text-xs font-bold text-[#8a6a52] mb-2">{subLabelText}</p>
           <Select
-            value={
-              !majorCategoryId
-                ? ALL
-                : subCategoryId ?? (subOptional ? NONE : ALL)
-            }
+            value={subSelectValue}
             onValueChange={handleSubChange}
             disabled={!majorCategoryId || availableSubs.length === 0}
           >
-            <SelectTrigger className="w-full bg-white border-[#e4d2b8]">
+            <SelectTrigger className="w-full min-w-0 bg-white border-[#e4d2b8]">
               <SelectValue
                 placeholder={
                   !majorCategoryId
-                    ? '大ジャンルを先に選んでください'
+                    ? t('category.selectMajorFirst')
                     : availableSubs.length === 0
-                      ? '小ジャンルはありません'
+                      ? t('category.noSubCategories')
                       : subOptional
-                        ? '指定しない'
-                        : 'すべて'
+                        ? t('common.none')
+                        : t('common.all')
                 }
-              />
+              >
+                {selectedSub?.name}
+              </SelectValue>
             </SelectTrigger>
             <SelectContent>
               {subOptional ? (
-                <SelectItem value={NONE}>指定しない</SelectItem>
+                <SelectItem value={NONE} label={t('common.none')}>
+                  {t('common.none')}
+                </SelectItem>
               ) : (
-                <SelectItem value={ALL}>すべて</SelectItem>
+                <SelectItem value={ALL} label={t('common.all')}>
+                  {t('common.all')}
+                </SelectItem>
               )}
               {availableSubs.map((sub) => (
-                <SelectItem key={sub.id} value={sub.id}>
+                <SelectItem key={sub.id} value={sub.id} label={sub.name}>
                   {sub.name}
                 </SelectItem>
               ))}

@@ -4,8 +4,10 @@ import { Post, MajorCategory, SubCategory } from '@/types';
 import { Button } from '@/components/ui/button';
 import { ExternalLink, ArrowLeft, Heart } from 'lucide-react';
 import Link from 'next/link';
-import { BookmarkButton } from '@/components/BookmarkButton';
-import { PostModerationActions } from '@/components/PostModerationActions';
+import { BookmarkButton } from '@/components/post/BookmarkButton';
+import { PostModerationActions } from '@/components/moderation/PostModerationActions';
+import { useTranslations } from '@/components/providers/LocaleProvider';
+import { LOCALE_DATE_FORMAT } from '@/lib/i18n/config';
 
 interface PostDetailProps {
   post: Post;
@@ -22,15 +24,20 @@ export function PostDetail({
   isOwner = false,
   onHidden,
 }: PostDetailProps) {
+  const { t, locale } = useTranslations();
+  const otherLabel = t('category.other');
   const categoryLabel = subCategory
-    ? `${category?.name ?? 'その他'} › ${subCategory.name}`
-    : category?.name || 'その他';
-  const formattedDate = new Date(post.createdAt).toLocaleDateString('ja-JP', {
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric',
-    weekday: 'long',
-  });
+    ? `${category?.name ?? otherLabel} › ${subCategory.name}`
+    : category?.name || otherLabel;
+  const formattedDate = new Date(post.createdAt).toLocaleDateString(
+    LOCALE_DATE_FORMAT[locale],
+    {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+      weekday: 'long',
+    }
+  );
 
   return (
     <>
@@ -38,7 +45,7 @@ export function PostDetail({
         <Link href="/">
           <Button variant="ghost" className="gap-2 -rotate-1">
             <ArrowLeft className="w-4 h-4" />
-            戻る
+            {t('post.back')}
           </Button>
         </Link>
         <div className="flex flex-wrap items-center gap-2">
@@ -46,7 +53,7 @@ export function PostDetail({
           {isOwner && (
             <Link href={`/post/${post.id}/edit`}>
               <Button variant="outline" size="sm" className="rotate-1">
-                編集する
+                {t('post.edit')}
               </Button>
             </Link>
           )}
@@ -70,13 +77,13 @@ export function PostDetail({
             <p className="text-sm text-[#8a6a52]">{formattedDate}</p>
           </div>
         </div>
-        <h2 className="font-black mb-2 rotate-1 inline-block">なぜおすすめ？</h2>
+        <h2 className="font-black mb-2 rotate-1 inline-block">{t('post.whyRecommend')}</h2>
         <p className="text-base leading-relaxed text-[#4a372c] whitespace-pre-wrap mb-6">
           {post.description}
         </p>
         <div className="flex items-center gap-2 text-[#c45c28] font-black mb-6">
           <Heart className="w-5 h-5 fill-[#ef7d3b] text-[#ef7d3b]" />
-          {post.likeCount} いいね
+          {t('post.likes', { count: post.likeCount })}
         </div>
         {post.url && (
           <a
@@ -86,7 +93,7 @@ export function PostDetail({
             className="inline-flex items-center gap-2 px-4 py-3 paper-note bg-[#fff7d6] font-bold text-[#c45c28] rotate-1"
           >
             <ExternalLink className="w-4 h-4" />
-            詳細を見る
+            {t('post.viewDetail')}
           </a>
         )}
         {!isOwner && (
@@ -97,15 +104,15 @@ export function PostDetail({
       </article>
 
       <p className="paper-note bg-[#fff7d6] p-4 text-sm text-[#6a5344] rotate-1">
-        他のおすすめは
+        {t('post.moreRecommendations')}
         <Link href="/search" className="font-black text-[#c45c28] mx-1">
-          検索
+          {t('nav.search')}
         </Link>
-        や
+        {t('common.and')}
         <Link href="/ranking" className="font-black text-[#c45c28] mx-1">
-          ランキング
+          {t('nav.ranking')}
         </Link>
-        から。
+        {t('common.from')}
       </p>
     </>
   );

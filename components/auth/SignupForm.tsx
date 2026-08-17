@@ -1,15 +1,19 @@
 'use client';
 
-import { useState } from 'react';
+import { Suspense, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { AuthDivider } from '@/components/auth/AuthDivider';
+import { GoogleSignInButton } from '@/components/auth/GoogleSignInButton';
 import { useAuth } from '@/components/providers/AuthProvider';
+import { useTranslations } from '@/components/providers/LocaleProvider';
 
-export function SignupForm() {
+function SignupFormInner() {
   const router = useRouter();
+  const { t } = useTranslations();
   const { signUp } = useAuth();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
@@ -30,17 +34,17 @@ export function SignupForm() {
     setErrorMessage('');
 
     if (!formData.name || !formData.email || !formData.password) {
-      setErrorMessage('必須項目を入力してください');
+      setErrorMessage(t('auth.signup.errorRequired'));
       return;
     }
 
     if (formData.password.length < 6) {
-      setErrorMessage('パスワードは6文字以上で入力してください');
+      setErrorMessage(t('auth.signup.errorPasswordLength'));
       return;
     }
 
     if (formData.password !== formData.passwordConfirm) {
-      setErrorMessage('パスワードが一致しません');
+      setErrorMessage(t('auth.signup.errorPasswordMismatch'));
       return;
     }
 
@@ -70,21 +74,24 @@ export function SignupForm() {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>新規登録</CardTitle>
+        <CardTitle>{t('auth.signup.title')}</CardTitle>
       </CardHeader>
       <CardContent>
+        <GoogleSignInButton onError={setErrorMessage} />
+        <AuthDivider />
+
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
-            <label className="block text-sm font-semibold">ユーザー名</label>
+            <label className="block text-sm font-semibold">{t('auth.signup.username')}</label>
             <Input
               name="name"
               value={formData.name}
               onChange={handleChange}
-              placeholder="表示名"
+              placeholder={t('auth.signup.displayNamePlaceholder')}
             />
           </div>
           <div className="space-y-2">
-            <label className="block text-sm font-semibold">メールアドレス</label>
+            <label className="block text-sm font-semibold">{t('auth.login.email')}</label>
             <Input
               type="email"
               name="email"
@@ -94,17 +101,19 @@ export function SignupForm() {
             />
           </div>
           <div className="space-y-2">
-            <label className="block text-sm font-semibold">パスワード</label>
+            <label className="block text-sm font-semibold">{t('auth.login.password')}</label>
             <Input
               type="password"
               name="password"
               value={formData.password}
               onChange={handleChange}
-              placeholder="6文字以上"
+              placeholder={t('auth.signup.passwordMinPlaceholder')}
             />
           </div>
           <div className="space-y-2">
-            <label className="block text-sm font-semibold">パスワード（確認）</label>
+            <label className="block text-sm font-semibold">
+              {t('auth.signup.passwordConfirm')}
+            </label>
             <Input
               type="password"
               name="passwordConfirm"
@@ -118,16 +127,24 @@ export function SignupForm() {
           )}
 
           <Button type="submit" disabled={isSubmitting} className="w-full">
-            {isSubmitting ? '登録中...' : 'アカウントを作成'}
+            {isSubmitting ? t('auth.signup.submitting') : t('auth.signup.submit')}
           </Button>
         </form>
         <p className="text-center mt-4 text-sm text-gray-600">
-          すでにアカウントをお持ちの方は
+          {t('auth.signup.hasAccount')}
           <Link href="/login" className="text-orange-600 font-semibold ml-1">
-            ログイン
+            {t('auth.signup.loginLink')}
           </Link>
         </p>
       </CardContent>
     </Card>
+  );
+}
+
+export function SignupForm() {
+  return (
+    <Suspense fallback={null}>
+      <SignupFormInner />
+    </Suspense>
   );
 }

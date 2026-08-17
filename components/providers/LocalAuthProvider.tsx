@@ -15,11 +15,14 @@ import {
   getLocalUserId,
   setLocalUserId,
 } from '@/lib/auth/local-session';
-import type { AuthContextValue, SignInResult, SignUpResult } from '@/lib/auth/types';
+import type { AuthContextValue, OAuthSignInResult, SignInResult, SignUpResult } from '@/lib/auth/types';
+import { getAuthTranslator } from '@/lib/i18n/auth-messages';
 import type { Profile } from '@/types';
 
 type LocalAuthContextValue = AuthContextValue & {
   signInWithPassword: (email: string, password: string) => Promise<SignInResult>;
+  signInWithGoogle: (redirectTo?: string) => Promise<OAuthSignInResult>;
+  signInAsUser: (userId: string) => Promise<void>;
   signUp: (input: {
     name: string;
     email: string;
@@ -57,13 +60,27 @@ export function LocalAuthProvider({ children }: { children: React.ReactNode }) {
 
   const signInWithPassword = useCallback(
     async (email: string, _password: string): Promise<SignInResult> => {
+      const t = getAuthTranslator();
       const found = await localDataRepository.findUserByEmail(email);
       if (!found) {
-        return { error: 'ユーザーが見つかりません。先に新規登録してください。' };
+        return { error: t('auth.errors.userNotFound') };
       }
       setLocalUserId(found.id);
       await loadProfile(found.id);
       return {};
+    },
+    [loadProfile]
+  );
+
+  const signInWithGoogle = useCallback(async (): Promise<OAuthSignInResult> => {
+    const t = getAuthTranslator();
+    return { error: t('auth.oauth.supabaseOnly') };
+  }, []);
+
+  const signInAsUser = useCallback(
+    async (id: string) => {
+      setLocalUserId(id);
+      await loadProfile(id);
     },
     [loadProfile]
   );
@@ -74,9 +91,10 @@ export function LocalAuthProvider({ children }: { children: React.ReactNode }) {
       email: string;
       password: string;
     }): Promise<SignUpResult> => {
+      const t = getAuthTranslator();
       const existing = await localDataRepository.findUserByEmail(input.email);
       if (existing) {
-        return { error: 'このメールアドレスはすでに登録されています' };
+        return { error: t('auth.errors.emailTaken') };
       }
 
       const user = await localDataRepository.registerUser({
@@ -112,9 +130,11 @@ export function LocalAuthProvider({ children }: { children: React.ReactNode }) {
       signOut,
       refreshProfile,
       signInWithPassword,
+      signInWithGoogle,
+      signInAsUser,
       signUp,
     }),
-    [user, profile, loading, signOut, refreshProfile, signInWithPassword, signUp]
+    [user, profile, loading, signOut, refreshProfile, signInWithPassword, signInWithGoogle, signInAsUser, signUp]
   );
 
   return (

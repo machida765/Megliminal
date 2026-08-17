@@ -72,9 +72,12 @@ export function usePosts(viewerUserId?: string | null) {
 
   const reload = useCallback(async () => {
     setLoading(true);
-    const data = await getRepository().getPosts(viewerUserId ?? undefined);
-    setPosts(data);
-    setLoading(false);
+    try {
+      const data = await getRepository().getPosts(viewerUserId ?? undefined);
+      setPosts(data);
+    } finally {
+      setLoading(false);
+    }
   }, [viewerUserId]);
 
   useEffect(() => {
@@ -91,9 +94,12 @@ export function usePost(id: string, viewerUserId?: string | null) {
   const reload = useCallback(async () => {
     if (!id) return;
     setLoading(true);
-    const data = await getRepository().getPost(id, viewerUserId ?? undefined);
-    setPost(data);
-    setLoading(false);
+    try {
+      const data = await getRepository().getPost(id, viewerUserId ?? undefined);
+      setPost(data);
+    } finally {
+      setLoading(false);
+    }
   }, [id, viewerUserId]);
 
   useEffect(() => {

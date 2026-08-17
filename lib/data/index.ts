@@ -9,5 +9,10 @@ export function getRepository(): DataRepository {
     : localDataRepository;
 }
 
-export type { DataRepository, CreatePostInput, UpdatePostInput } from '@/lib/data/types';
+export type {
+  DataRepository,
+  CreatePostInput,
+  UpdatePostInput,
+  HomePageData,
+} from '@/lib/data/types';
 export { localStore } from '@/lib/data/local-store';

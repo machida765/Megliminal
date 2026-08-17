@@ -126,6 +126,80 @@ Supabase ダッシュボード **Authentication** → **Users** にユーザー�
 
 ---
 
+## Step 6: Google ログイン（OAuth）
+
+アプリ側は `/login`・`/signup` に **Google でログイン** ボタンを表示します（`NEXT_PUBLIC_DATA_SOURCE=supabase` のときのみ）。
+
+### 6-1. Google Cloud Console
+
+1. [Google Cloud Console](https://console.cloud.google.com/) を開く
+2. プロジェクトを作成（または既存を選択）
+3. **API とサービス** → **OAuth 同意画面**
+   - User Type: **外部**（テスト中は「テスト」モードで OK）
+   - アプリ名・サポートメールを入力して保存
+   - **テストユーザー** に自分の Gmail を追加（テストモードの場合）
+4. **API とサービス** → **認証情報** → **認証情報を作成** → **OAuth クライアント ID**
+   - アプリケーションの種類: **ウェブアプリケーション**
+   - **承認済みの JavaScript 生成元**:
+     - `http://localhost:3000`（開発）
+     - 本番 URL（デプロイ後）
+   - **承認済みのリダイレクト URI**（重要）:
+     - `https://<あなたの-project-ref>.supabase.co/auth/v1/callback`
+     - 例: `https://rdfmqwqljebrmxejhumj.supabase.co/auth/v1/callback`
+   - ⚠️ Google 側のリダイレクト先は **Supabase の URL** です。`localhost/auth/callback` ではありません。
+5. **クライアント ID** と **クライアント シークレット** をコピー
+
+### 6-2. Supabase ダッシュボード
+
+1. **Authentication** → **Providers** → **Google** を **Enable**
+2. Google の Client ID / Client Secret を貼り付けて保存
+3. **Authentication** → **URL Configuration**
+   - **Site URL**: `http://localhost:3000`
+   - **Redirect URLs** に追加:
+     - `http://localhost:3000/auth/callback`
+     - 本番: `https://your-domain.com/auth/callback`
+
+### 6-3. 既に schema.sql を実行済みの場合（Google 用プロフィール）
+
+Google ログインでは `full_name` / `picture` がメタデータに入ります。  
+トリガーを更新していない場合、SQL Editor で以下を実行:
+
+```sql
+create or replace function public.handle_new_user()
+returns trigger
+language plpgsql
+security definer set search_path = ''
+as $$
+begin
+  insert into public.profiles (id, name, avatar_url, role)
+  values (
+    new.id,
+    coalesce(
+      new.raw_user_meta_data->>'name',
+      new.raw_user_meta_data->>'full_name',
+      split_part(new.email, '@', 1)
+    ),
+    coalesce(
+      new.raw_user_meta_data->>'avatar_url',
+      new.raw_user_meta_data->>'picture',
+      '👤'
+    ),
+    'user'
+  );
+  return new;
+end;
+$$;
+```
+
+### 6-4. 動作確認
+
+1. `.env.local` で `NEXT_PUBLIC_DATA_SOURCE=supabase`
+2. `npm run dev` を再起動
+3. `/login` → **Google でログイン**
+4. Google アカウント選択 → アプリに戻る → ナビに名前が表示されれば OK
+
+---
+
 ## よくあるつまずき
 
 ### 「Invalid API key」
@@ -141,6 +215,17 @@ Supabase ダッシュボード **Authentication** → **Users** にユーザー�
 
 - ブラウザの Cookie がブロックされていないか確認
 - `middleware.ts` が正しく配置されているか確認
+
+### Google ログインで `redirect_uri_mismatch`
+
+- Google Cloud の **承認済みのリダイレクト URI** が  
+  `https://<project-ref>.supabase.co/auth/v1/callback` になっているか確認
+
+### Google ログイン後に `/login?error=auth_callback` になる
+
+- Supabase **URL Configuration** の Redirect URLs に  
+  `http://localhost:3000/auth/callback` が入っているか確認
+- 開発サーバーを再起動してから再試行
 
 ---
 

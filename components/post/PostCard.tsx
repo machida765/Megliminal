@@ -5,6 +5,8 @@ import { Post, MajorCategory, SubCategory } from '@/types';
 import { ExternalLink, Heart } from 'lucide-react';
 import * as LucideIcons from 'lucide-react';
 import { useMajorCategories, useSubCategories } from '@/lib/data/hooks';
+import { useTranslations } from '@/components/providers/LocaleProvider';
+import { LOCALE_DATE_FORMAT } from '@/lib/i18n/config';
 import { paperTone, tiltClass } from '@/lib/tilt';
 import { cn } from '@/lib/utils';
 
@@ -22,16 +24,20 @@ export function PostCard({
   subCategories: subCategoriesProp,
   flat = false,
 }: PostCardProps) {
+  const { locale } = useTranslations();
   const { categories: categoriesFromHook } = useMajorCategories();
   const { subCategories: subCategoriesFromHook } = useSubCategories();
   const categories = categoriesProp ?? categoriesFromHook;
   const subCategories = subCategoriesProp ?? subCategoriesFromHook;
 
-  const formattedDate = new Date(post.createdAt).toLocaleDateString('ja-JP', {
-    year: 'numeric',
-    month: 'short',
-    day: 'numeric',
-  });
+  const formattedDate = new Date(post.createdAt).toLocaleDateString(
+    LOCALE_DATE_FORMAT[locale],
+    {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+    }
+  );
 
   const category = categories.find((c) => c.id === post.majorCategoryId);
   const subCategory = post.subCategoryId

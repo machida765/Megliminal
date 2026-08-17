@@ -5,13 +5,17 @@ import Link from 'next/link';
 import { Flag, Trash2 } from 'lucide-react';
 import { getRepository } from '@/lib/data';
 import { usePosts, useReports } from '@/lib/data/hooks';
-import { REPORT_REASON_LABELS } from '@/types';
+import { useTranslations } from '@/components/providers/LocaleProvider';
+import { type ReportReason } from '@/types';
 
 export function AdminModeration() {
+  const { t, messages } = useTranslations();
   const { reports, loading, reload } = useReports('pending');
   const { posts } = usePosts();
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [deleting, setDeleting] = useState(false);
+
+  const reasonLabels = messages.report.reason;
 
   const postMap = useMemo(
     () => new Map(posts.map((p) => [p.id, p])),
@@ -58,11 +62,7 @@ export function AdminModeration() {
 
   const handleBulkDelete = async () => {
     if (selected.size === 0) return;
-    if (
-      !confirm(
-        `選択した ${selected.size} 件の投稿を削除しますか？この操作は取り消せません。`
-      )
-    ) {
+    if (!confirm(t('admin.moderation.bulkDeleteConfirm', { count: selected.size }))) {
       return;
     }
     setDeleting(true);
@@ -75,7 +75,7 @@ export function AdminModeration() {
   };
 
   if (loading) {
-    return <p className="text-gray-500 text-sm">読み込み中...</p>;
+    return <p className="text-gray-500 text-sm">{t('common.loading')}</p>;
   }
 
   return (
@@ -83,10 +83,13 @@ export function AdminModeration() {
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-sm font-semibold text-gray-400 uppercase tracking-widest">
-            通報・モデレーション
+            {t('admin.moderation.title')}
           </h2>
           <p className="text-xs text-gray-600 mt-1">
-            未対応の通報: {reports.length} 件 / 対象投稿: {grouped.length} 件
+            {t('admin.moderation.pending', {
+              reports: reports.length,
+              posts: grouped.length,
+            })}
           </p>
         </div>
         {grouped.length > 0 && (
@@ -95,7 +98,9 @@ export function AdminModeration() {
               onClick={toggleAll}
               className="px-3 py-1.5 text-xs rounded-lg bg-gray-800 hover:bg-gray-700 transition-colors"
             >
-              {selected.size === grouped.length ? '選択解除' : 'すべて選択'}
+              {selected.size === grouped.length
+                ? t('admin.moderation.deselectAll')
+                : t('admin.moderation.selectAll')}
             </button>
             <button
               onClick={handleBulkDelete}
@@ -103,7 +108,9 @@ export function AdminModeration() {
               className="flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-lg bg-red-600 hover:bg-red-500 disabled:opacity-40 transition-colors"
             >
               <Trash2 className="w-3.5 h-3.5" />
-              {deleting ? '削除中...' : `一括削除 (${selected.size})`}
+              {deleting
+                ? t('admin.moderation.deleting')
+                : t('admin.moderation.bulkDelete', { count: selected.size })}
             </button>
           </div>
         )}
@@ -112,7 +119,7 @@ export function AdminModeration() {
       {grouped.length === 0 ? (
         <div className="rounded-xl border border-dashed border-gray-800 px-5 py-8 text-center text-sm text-gray-600">
           <Flag className="w-6 h-6 mx-auto mb-2 text-gray-700" />
-          未対応の通報はありません
+          {t('admin.moderation.empty')}
         </div>
       ) : (
         <div className="space-y-2">
@@ -136,7 +143,7 @@ export function AdminModeration() {
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 mb-1">
                     <span className="text-xs font-bold text-red-400 bg-red-950/50 px-2 py-0.5 rounded-full">
-                      通報 {group.count} 件
+                      {t('admin.moderation.reportCount', { count: group.count })}
                     </span>
                     {post && (
                       <Link
@@ -148,13 +155,15 @@ export function AdminModeration() {
                       </Link>
                     )}
                     {!post && (
-                      <span className="text-sm text-gray-500">（投稿 ID: {group.postId}）</span>
+                      <span className="text-sm text-gray-500">
+                        {t('admin.moderation.postIdFallback', { id: group.postId })}
+                      </span>
                     )}
                   </div>
                   <ul className="text-xs text-gray-500 space-y-0.5">
                     {group.reports.slice(0, 3).map((r) => (
                       <li key={r.id}>
-                        {REPORT_REASON_LABELS[r.reason]}
+                        {reasonLabels[r.reason as ReportReason]}
                         {r.detail ? ` — ${r.detail}` : ''}
                       </li>
                     ))}

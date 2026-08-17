@@ -1,5 +1,7 @@
 // types/index.ts（v3 - ランキング・ブックマーク・モデレーション）
 
+import { getRankingPeriodLabels, getReportReasonLabels } from '@/lib/i18n/labels';
+
 export type UserRole = 'user' | 'admin';
 
 export type MajorCategory = {
@@ -131,15 +133,8 @@ export type HiddenPost = {
   createdAt: string;
 };
 
-export const REPORT_REASON_LABELS: Record<ReportReason, string> = {
-  spam: 'スパム',
-  inappropriate: '不適切な内容',
-  misinformation: '誤情報',
-  other: 'その他',
-};
+/** @deprecated getReportReasonLabels() または useTranslations() を使う */
+export const REPORT_REASON_LABELS = getReportReasonLabels();
 
-export const RANKING_PERIOD_LABELS: Record<RankingPeriod, string> = {
-  all: '全期間',
-  month: '今月',
-  week: '今週',
-};
+/** @deprecated getRankingPeriodLabels() または useTranslations() を使う */
+export const RANKING_PERIOD_LABELS = getRankingPeriodLabels();

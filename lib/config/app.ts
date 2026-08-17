@@ -1,10 +1,16 @@
-/** アプリ名（表示用） */
-export const APP_NAME = 'メグリミナル';
+import { getMessages } from '@/messages';
+import { DEFAULT_LOCALE } from '@/lib/i18n/config';
 
-/** パッケージ・フォルダ名など（ローマ字） */
-export const APP_SLUG = 'meguriminal';
+const app = getMessages(DEFAULT_LOCALE).app;
 
-export const APP_TAGLINE = '誰かの「お気に入り」に出会える場所';
+/** @deprecated messages/ja.ts の app.name を正本とする */
+export const APP_NAME = app.name;
 
-export const APP_DESCRIPTION =
-  'アルゴリズムに頼らず、人のおすすめに出会えるプラットフォーム';
+/** @deprecated messages/ja.ts の app.slug を正本とする */
+export const APP_SLUG = app.slug;
+
+/** @deprecated messages/ja.ts の app.tagline を正本とする */
+export const APP_TAGLINE = app.tagline;
+
+/** @deprecated messages/ja.ts の app.description を正本とする */
+export const APP_DESCRIPTION = app.description;

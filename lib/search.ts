@@ -1,4 +1,5 @@
 import { isWithinPeriod } from '@/lib/ranking';
+import { getSearchSortLabels } from '@/lib/i18n/labels';
 import type { Post, RankingPeriod } from '@/types';
 
 export type SearchSort = 'newest' | 'oldest' | 'likes';
@@ -16,11 +17,8 @@ export type SearchFilters = {
   sort: SearchSort;
 };
 
-export const SEARCH_SORT_LABELS: Record<SearchSort, string> = {
-  newest: '新しい順',
-  oldest: '古い順',
-  likes: 'いいねが多い順',
-};
+/** @deprecated getSearchSortLabels() または useTranslations().messages.search.sort を使う */
+export const SEARCH_SORT_LABELS = getSearchSortLabels();
 
 export function defaultSearchFilters(): SearchFilters {
   return {
@@ -43,7 +41,7 @@ export function filterAndSortPosts(posts: Post[], filters: SearchFilters): Post[
     const matchesQuery =
       q.length === 0 ||
       post.title.toLowerCase().includes(q) ||
-      post.description.toLowerCase().includes(q) ||
+      (post.description ?? '').toLowerCase().includes(q) ||
       (post.url ?? '').toLowerCase().includes(q) ||
       post.user.name.toLowerCase().includes(q);
 

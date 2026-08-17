@@ -1,20 +1,30 @@
 'use client';
 
-import { useState } from 'react';
+import { Suspense, useState, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { AuthDivider } from '@/components/auth/AuthDivider';
+import { GoogleSignInButton } from '@/components/auth/GoogleSignInButton';
 import { useAuth } from '@/components/providers/AuthProvider';
+import { useTranslations } from '@/components/providers/LocaleProvider';
 
-export function LoginForm() {
+function LoginFormInner() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const { t } = useTranslations();
   const { signInWithPassword } = useAuth();
   const redirectTo = searchParams.get('redirect') || '/';
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
+
+  useEffect(() => {
+    if (searchParams.get('error') === 'auth_callback') {
+      setErrorMessage(t('auth.errors.oauthCallback'));
+    }
+  }, [searchParams, t]);
 
   const [formData, setFormData] = useState({
     email: '',
@@ -34,7 +44,7 @@ export function LoginForm() {
     setErrorMessage('');
 
     if (!formData.email || !formData.password) {
-      setErrorMessage('メールアドレスとパスワードを入力してください');
+      setErrorMessage(t('auth.login.errorRequired'));
       return;
     }
 
@@ -57,14 +67,17 @@ export function LoginForm() {
     <div className="max-w-md mx-auto">
       <Card>
         <CardHeader>
-          <CardTitle>ログイン</CardTitle>
+          <CardTitle>{t('auth.login.title')}</CardTitle>
         </CardHeader>
 
         <CardContent>
+          <GoogleSignInButton onError={setErrorMessage} />
+          <AuthDivider />
+
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-2">
               <label className="block text-sm font-semibold">
-                メールアドレス
+                {t('auth.login.email')}
               </label>
               <Input
                 type="email"
@@ -77,7 +90,7 @@ export function LoginForm() {
 
             <div className="space-y-2">
               <label className="block text-sm font-semibold">
-                パスワード
+                {t('auth.login.password')}
               </label>
               <Input
                 type="password"
@@ -97,18 +110,26 @@ export function LoginForm() {
               disabled={isSubmitting}
               className="w-full"
             >
-              {isSubmitting ? 'ログイン中...' : 'ログイン'}
+              {isSubmitting ? t('auth.login.submitting') : t('auth.login.title')}
             </Button>
           </form>
 
           <div className="text-center mt-4 text-sm text-gray-600">
-            アカウントをお持ちでない方は
+            {t('auth.login.noAccount')}
             <Link href="/signup" className="text-orange-600 font-semibold ml-1">
-              新規登録
+              {t('auth.login.signupLink')}
             </Link>
           </div>
         </CardContent>
       </Card>
     </div>
+  );
+}
+
+export function LoginForm() {
+  return (
+    <Suspense fallback={null}>
+      <LoginFormInner />
+    </Suspense>
   );
 }

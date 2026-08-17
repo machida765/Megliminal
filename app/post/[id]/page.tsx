@@ -3,9 +3,10 @@
 import { use } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { PostDetail } from '@/components/PostDetail';
+import { PostDetail } from '@/components/post/PostDetail';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/components/providers/AuthProvider';
+import { useTranslations } from '@/components/providers/LocaleProvider';
 import { useMajorCategories, usePost, useSubCategories } from '@/lib/data/hooks';
 
 interface PostPageProps {
@@ -15,6 +16,7 @@ interface PostPageProps {
 export default function PostPage({ params }: PostPageProps) {
   const { id } = use(params);
   const router = useRouter();
+  const { t } = useTranslations();
   const { user } = useAuth();
   const { post, loading } = usePost(id, user?.id);
   const { categories } = useMajorCategories();
@@ -29,7 +31,7 @@ export default function PostPage({ params }: PostPageProps) {
   if (loading) {
     return (
       <div className="max-w-3xl mx-auto px-4 py-20 text-center text-gray-500">
-        読み込み中...
+        {t('common.loading')}
       </div>
     );
   }
@@ -37,14 +39,10 @@ export default function PostPage({ params }: PostPageProps) {
   if (!post) {
     return (
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 text-center">
-        <h1 className="text-2xl font-bold text-gray-900 mb-4">
-          投稿が見つかりません
-        </h1>
-        <p className="text-gray-600 mb-6">
-          お探しの投稿は削除されたか、非表示にした可能性があります。
-        </p>
+        <h1 className="text-2xl font-bold text-gray-900 mb-4">{t('post.notFound')}</h1>
+        <p className="text-gray-600 mb-6">{t('post.notFoundDetail')}</p>
         <Button asChild>
-          <Link href="/">ホームに戻る</Link>
+          <Link href="/">{t('common.backToHome')}</Link>
         </Button>
       </div>
     );

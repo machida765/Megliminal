@@ -12,11 +12,9 @@ import {
 } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { useAuth } from '@/components/providers/AuthProvider';
+import { useTranslations } from '@/components/providers/LocaleProvider';
 import { getRepository } from '@/lib/data';
-import {
-  REPORT_REASON_LABELS,
-  type ReportReason,
-} from '@/types';
+import { type ReportReason } from '@/types';
 
 interface PostModerationActionsProps {
   postId: string;
@@ -27,6 +25,7 @@ export function PostModerationActions({
   postId,
   onHidden,
 }: PostModerationActionsProps) {
+  const { t, messages } = useTranslations();
   const { user } = useAuth();
   const [showReport, setShowReport] = useState(false);
   const [reason, setReason] = useState<ReportReason>('inappropriate');
@@ -35,17 +34,20 @@ export function PostModerationActions({
 
   if (!user) return null;
 
+  const reasonLabels = messages.report.reason;
+  const selectedReasonLabel = reasonLabels[reason];
+
   const handleReport = async () => {
     setSubmitting(true);
     await getRepository().reportPost(user.id, postId, reason, detail || undefined);
     setSubmitting(false);
     setShowReport(false);
     setDetail('');
-    alert('通報を受け付けました。ご協力ありがとうございます。');
+    alert(t('report.submitted'));
   };
 
   const handleHide = async () => {
-    if (!confirm('この投稿を非表示にしますか？（あなたの画面からのみ消えます）')) {
+    if (!confirm(t('report.hideConfirm'))) {
       return;
     }
     await getRepository().hidePost(user.id, postId);
@@ -63,7 +65,7 @@ export function PostModerationActions({
           onClick={() => setShowReport((v) => !v)}
         >
           <Flag className="w-4 h-4" />
-          通報
+          {t('report.report')}
         </Button>
         <Button
           type="button"
@@ -73,32 +75,34 @@ export function PostModerationActions({
           onClick={handleHide}
         >
           <EyeOff className="w-4 h-4" />
-          非表示
+          {t('report.hide')}
         </Button>
       </div>
 
       {showReport && (
         <div className="rounded-xl border border-orange-100 bg-orange-50/50 p-4 space-y-3">
-          <p className="text-sm font-semibold text-orange-950">通報理由</p>
+          <p className="text-sm font-semibold text-orange-950">{t('report.reasonLabel')}</p>
           <Select
             value={reason}
             onValueChange={(v) => setReason((v ?? 'other') as ReportReason)}
           >
             <SelectTrigger className="w-full bg-white">
-              <SelectValue />
+              <SelectValue>{selectedReasonLabel}</SelectValue>
             </SelectTrigger>
             <SelectContent>
-              {Object.entries(REPORT_REASON_LABELS).map(([key, label]) => (
-                <SelectItem key={key} value={key}>
-                  {label}
-                </SelectItem>
-              ))}
+              {(Object.entries(reasonLabels) as [ReportReason, string][]).map(
+                ([key, label]) => (
+                  <SelectItem key={key} value={key} label={label}>
+                    {label}
+                  </SelectItem>
+                )
+              )}
             </SelectContent>
           </Select>
           <Textarea
             value={detail}
             onChange={(e) => setDetail(e.target.value)}
-            placeholder="詳細（任意）"
+            placeholder={t('report.detailPlaceholder')}
             rows={3}
             className="bg-white"
           />
@@ -109,7 +113,7 @@ export function PostModerationActions({
               disabled={submitting}
               onClick={handleReport}
             >
-              {submitting ? '送信中...' : '通報する'}
+              {submitting ? t('report.submitting') : t('report.submit')}
             </Button>
             <Button
               type="button"
@@ -117,7 +121,7 @@ export function PostModerationActions({
               variant="ghost"
               onClick={() => setShowReport(false)}
             >
-              キャンセル
+              {t('common.cancel')}
             </Button>
           </div>
         </div>

@@ -4,9 +4,9 @@ import { Suspense, useState, useMemo, useEffect } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { CategoryPicker } from '@/components/CategoryPicker';
-import { PostCard } from '@/components/PostCard';
-import { SearchPeriodFilter, formatSearchDateRangeLabel } from '@/components/SearchPeriodFilter';
+import { CategoryPicker } from '@/components/search/CategoryPicker';
+import { PostCard } from '@/components/post/PostCard';
+import { SearchPeriodFilter, formatSearchDateRangeLabel } from '@/components/search/SearchPeriodFilter';
 import {
   Select,
   SelectTrigger,
@@ -16,15 +16,17 @@ import {
 } from '@/components/ui/select';
 import { useMajorCategories, usePosts, useSubCategories, useTags } from '@/lib/data/hooks';
 import { useAuth } from '@/components/providers/AuthProvider';
+import { useTranslations } from '@/components/providers/LocaleProvider';
 import {
   defaultSearchFilters,
   filterAndSortPosts,
-  SEARCH_SORT_LABELS,
   type SearchFilters,
   type SearchSort,
   type TagMatch,
 } from '@/lib/search';
-import { RANKING_PERIOD_LABELS, type Tag } from '@/types';
+import { type Tag } from '@/types';
+import { getMessages } from '@/messages';
+import { DEFAULT_LOCALE } from '@/lib/i18n/config';
 import { Minus, Plus, X } from 'lucide-react';
 
 function hasAdvancedFilters(filters: SearchFilters): boolean {
@@ -40,13 +42,22 @@ function hasAdvancedFilters(filters: SearchFilters): boolean {
 
 export default function SearchPage() {
   return (
-    <Suspense fallback={<div className="px-4 py-20 text-center text-[#8a6a52]">読み込み中...</div>}>
+    <Suspense fallback={<SearchPageFallback />}>
       <SearchPageInner />
     </Suspense>
   );
 }
 
+function SearchPageFallback() {
+  return (
+    <div className="px-4 py-20 text-center text-[#8a6a52]">
+      {getMessages(DEFAULT_LOCALE).common.loading}
+    </div>
+  );
+}
+
 function SearchPageInner() {
+  const { t, messages } = useTranslations();
   const searchParams = useSearchParams();
   const { user } = useAuth();
   const { categories } = useMajorCategories();
@@ -80,9 +91,9 @@ function SearchPageInner() {
     Boolean(filters.dateFrom) ||
     Boolean(filters.dateTo);
 
-  const customDateLabel = formatSearchDateRangeLabel(
-    filters.dateFrom,
-    filters.dateTo
+  const customDateLabel = useMemo(
+    () => formatSearchDateRangeLabel(filters.dateFrom, filters.dateTo, t),
+    [filters.dateFrom, filters.dateTo, t]
   );
 
   const patch = (partial: Partial<SearchFilters>) => {
@@ -111,10 +122,8 @@ function SearchPageInner() {
   return (
     <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       <header className="mb-5">
-        <h1 className="text-2xl sm:text-3xl font-black text-[#3b2a22] mb-1">検索</h1>
-        <p className="text-sm text-[#6a5344]">
-          まずは大ジャンル・小ジャンルから。タグ・キーワード・期間などは詳細条件を開いて設定できます。
-        </p>
+        <h1 className="text-2xl sm:text-3xl font-black text-[#3b2a22] mb-1">{t('search.title')}</h1>
+        <p className="text-sm text-[#6a5344]">{t('search.description')}</p>
       </header>
 
       <div className="func-surface p-4 mb-4 space-y-4">
@@ -145,14 +154,16 @@ function SearchPageInner() {
           {expanded ? (
             <>
               <Minus className="w-4 h-4" />
-              詳細条件を閉じる
+              {t('search.advancedClose')}
             </>
           ) : (
             <>
               <Plus className="w-4 h-4" />
-              詳細条件を設定
+              {t('search.advancedOpen')}
               {hasAdvancedFilters(filters) && (
-                <span className="text-xs font-normal text-[#8a6a52]">（設定中）</span>
+                <span className="text-xs font-normal text-[#8a6a52]">
+                  {t('search.advancedActive')}
+                </span>
               )}
             </>
           )}
@@ -161,10 +172,10 @@ function SearchPageInner() {
         {expanded && (
           <div className="space-y-4 pt-3 border-t border-[#efe3d2]">
             <div>
-              <p className="text-xs font-bold text-[#8a6a52] mb-2">キーワード</p>
+              <p className="text-xs font-bold text-[#8a6a52] mb-2">{t('search.keyword')}</p>
               <Input
                 type="text"
-                placeholder="タイトル・本文・投稿者名で探す"
+                placeholder={t('search.keywordPlaceholder')}
                 value={filters.query}
                 onChange={(e) => patch({ query: e.target.value })}
                 className="bg-white"
@@ -177,10 +188,11 @@ function SearchPageInner() {
               onToggle={toggleTag}
               match={filters.tagMatch}
               onMatchChange={(tagMatch) => patch({ tagMatch })}
+              labels={messages.search}
             />
 
             <div>
-              <p className="text-xs font-bold text-[#8a6a52] mb-2">投稿日</p>
+              <p className="text-xs font-bold text-[#8a6a52] mb-2">{t('search.postedAt')}</p>
               <SearchPeriodFilter
                 period={filters.period}
                 dateFrom={filters.dateFrom}
@@ -196,15 +208,22 @@ function SearchPageInner() {
 
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-4">
         <p className="text-sm text-[#6a5344] tabular">
-          {loading ? '...' : `検索結果：${filteredPosts.length} 件`}
+          {loading
+            ? '...'
+            : t('search.resultCount', { count: filteredPosts.length })}
           {filters.tagIds.length > 1 && (
             <span className="ml-2 text-xs">
-              タグは「{filters.tagMatch === 'and' ? 'すべて含む' : 'いずれか'}」
+              {t('search.tagMatchNote', {
+                mode:
+                  filters.tagMatch === 'and'
+                    ? messages.search.tagMatch.and
+                    : messages.search.tagMatch.or,
+              })}
             </span>
           )}
         </p>
         <div className="flex items-center gap-2">
-          <span className="text-xs font-bold text-[#8a6a52] shrink-0">並び替え</span>
+          <span className="text-xs font-bold text-[#8a6a52] shrink-0">{t('common.sort')}</span>
           <Select
             value={filters.sort}
             onValueChange={(v) => patch({ sort: (v ?? 'newest') as SearchSort })}
@@ -213,9 +232,9 @@ function SearchPageInner() {
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              {Object.entries(SEARCH_SORT_LABELS).map(([value, label]) => (
+              {(Object.keys(messages.search.sort) as SearchSort[]).map((value) => (
                 <SelectItem key={value} value={value}>
-                  {label}
+                  {messages.search.sort[value]}
                 </SelectItem>
               ))}
             </SelectContent>
@@ -259,14 +278,14 @@ function SearchPageInner() {
           ) : (
             filters.period !== 'all' && (
               <FilterChip
-                label={RANKING_PERIOD_LABELS[filters.period]}
+                label={messages.ranking.period[filters.period]}
                 onRemove={() => patch({ period: 'all' })}
               />
             )
           )}
           {filters.sort !== 'newest' && (
             <span className="text-xs text-[#8a6a52]">
-              {SEARCH_SORT_LABELS[filters.sort]}
+              {messages.search.sort[filters.sort]}
             </span>
           )}
           {hasExtraFilters && (
@@ -275,7 +294,7 @@ function SearchPageInner() {
               onClick={resetFilters}
               className="text-xs font-bold text-[#c45c28] ml-1"
             >
-              条件をクリア
+              {t('common.clearFilters')}
             </button>
           )}
         </div>
@@ -289,11 +308,11 @@ function SearchPageInner() {
         ) : (
           <div className="col-span-full func-surface p-10 text-center">
             <p className="text-[#6a5344] mb-3">
-              {loading ? '読み込み中...' : '条件に合う投稿はありません'}
+              {loading ? t('common.loading') : t('search.noResults')}
             </p>
             {!loading && hasExtraFilters && (
               <Button type="button" variant="flat-outline" onClick={resetFilters}>
-                絞り込みを外す
+                {t('search.clearRefinement')}
               </Button>
             )}
           </div>
@@ -309,17 +328,22 @@ function TagPicker({
   onToggle,
   match,
   onMatchChange,
+  labels,
 }: {
   tags: Tag[];
   selectedIds: string[];
   onToggle: (tagId: string) => void;
   match: TagMatch;
   onMatchChange: (match: TagMatch) => void;
+  labels: {
+    tags: string;
+    tagMatch: { or: string; and: string };
+  };
 }) {
   return (
     <div>
       <div className="flex flex-wrap items-center justify-between gap-2 mb-2">
-        <p className="text-xs font-bold text-[#8a6a52]">タグ（複数可）</p>
+        <p className="text-xs font-bold text-[#8a6a52]">{labels.tags}</p>
         {onMatchChange && match && (
           <div className="flex gap-1">
             <Button
@@ -328,7 +352,7 @@ function TagPicker({
               variant={match === 'or' ? 'flat' : 'flat-outline'}
               onClick={() => onMatchChange('or')}
             >
-              いずれか
+              {labels.tagMatch.or}
             </Button>
             <Button
               type="button"
@@ -336,7 +360,7 @@ function TagPicker({
               variant={match === 'and' ? 'flat' : 'flat-outline'}
               onClick={() => onMatchChange('and')}
             >
-              すべて含む
+              {labels.tagMatch.and}
             </Button>
           </div>
         )}

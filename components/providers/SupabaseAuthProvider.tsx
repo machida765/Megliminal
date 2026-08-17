@@ -9,11 +9,13 @@ import {
   useState,
 } from 'react';
 import { createClient } from '@/lib/supabase/client';
-import type { AuthContextValue, SignInResult, SignUpResult } from '@/lib/auth/types';
+import type { AuthContextValue, OAuthSignInResult, SignInResult, SignUpResult } from '@/lib/auth/types';
+import { getAuthTranslator } from '@/lib/i18n/auth-messages';
 import type { Profile } from '@/types';
 
 type SupabaseAuthContextValue = AuthContextValue & {
   signInWithPassword: (email: string, password: string) => Promise<SignInResult>;
+  signInWithGoogle: (redirectTo?: string) => Promise<OAuthSignInResult>;
   signUp: (input: {
     name: string;
     email: string;
@@ -96,11 +98,39 @@ export function SupabaseAuthProvider({ children }: { children: React.ReactNode }
 
   const signInWithPassword = useCallback(
     async (email: string, password: string): Promise<SignInResult> => {
+      const t = getAuthTranslator();
       const { error } = await supabase.auth.signInWithPassword({ email, password });
       if (error) {
         return {
-          error: 'ログインに失敗しました。メールアドレスとパスワードを確認してください。',
+          error: t('auth.errors.loginFailed'),
         };
+      }
+      return {};
+    },
+    [supabase]
+  );
+
+  const signInWithGoogle = useCallback(
+    async (redirectTo = '/'): Promise<OAuthSignInResult> => {
+      const t = getAuthTranslator();
+      const origin =
+        typeof window !== 'undefined' ? window.location.origin : '';
+      const safeNext = redirectTo.startsWith('/') ? redirectTo : '/';
+      const redirectUrl = `${origin}/auth/callback?next=${encodeURIComponent(safeNext)}`;
+
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo: redirectUrl,
+          queryParams: {
+            access_type: 'offline',
+            prompt: 'select_account',
+          },
+        },
+      });
+
+      if (error) {
+        return { error: error.message || t('auth.errors.oauthFailed') };
       }
       return {};
     },
@@ -113,6 +143,7 @@ export function SupabaseAuthProvider({ children }: { children: React.ReactNode }
       email: string;
       password: string;
     }): Promise<SignUpResult> => {
+      const t = getAuthTranslator();
       const { data, error } = await supabase.auth.signUp({
         email: input.email,
         password: input.password,
@@ -120,14 +151,13 @@ export function SupabaseAuthProvider({ children }: { children: React.ReactNode }
       });
 
       if (error) {
-        return { error: error.message || '登録に失敗しました' };
+        return { error: error.message || t('auth.errors.signupFailed') };
       }
 
       if (!data.session) {
         return {
           needsEmailConfirmation: true,
-          error:
-            '確認メールを送信しました。メール内のリンクをクリックしてからログインしてください。',
+          error: t('auth.errors.emailConfirmation'),
         };
       }
 
@@ -150,9 +180,10 @@ export function SupabaseAuthProvider({ children }: { children: React.ReactNode }
       signOut,
       refreshProfile,
       signInWithPassword,
+      signInWithGoogle,
       signUp,
     }),
-    [user, profile, loading, signOut, refreshProfile, signInWithPassword, signUp]
+    [user, profile, loading, signOut, refreshProfile, signInWithPassword, signInWithGoogle, signUp]
   );
 
   return (

@@ -2,9 +2,10 @@
 
 import { use } from 'react';
 import Link from 'next/link';
-import { PostCard } from '@/components/PostCard';
+import { PostCard } from '@/components/post/PostCard';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/components/providers/AuthProvider';
+import { useTranslations } from '@/components/providers/LocaleProvider';
 import { usePostsByUser, useUser } from '@/lib/data/hooks';
 
 interface ProfilePageProps {
@@ -13,6 +14,7 @@ interface ProfilePageProps {
 
 export default function ProfilePage({ params }: ProfilePageProps) {
   const { userId } = use(params);
+  const { t } = useTranslations();
   const { user, loading: userLoading } = useUser(userId);
   const { user: currentUser } = useAuth();
   const { posts, loading: postsLoading } = usePostsByUser(userId, currentUser?.id);
@@ -23,7 +25,7 @@ export default function ProfilePage({ params }: ProfilePageProps) {
   if (loading) {
     return (
       <div className="max-w-4xl mx-auto px-4 py-20 text-center text-gray-500">
-        読み込み中...
+        {t('common.loading')}
       </div>
     );
   }
@@ -31,9 +33,9 @@ export default function ProfilePage({ params }: ProfilePageProps) {
   if (!user) {
     return (
       <div className="max-w-4xl mx-auto px-4 py-12 text-center">
-        <p className="text-gray-600 mb-4">ユーザーが見つかりません</p>
+        <p className="text-gray-600 mb-4">{t('profile.notFound')}</p>
         <Button asChild>
-          <Link href="/">ホームに戻る</Link>
+          <Link href="/">{t('common.backToHome')}</Link>
         </Button>
       </div>
     );
@@ -48,12 +50,14 @@ export default function ProfilePage({ params }: ProfilePageProps) {
             <h1 className="text-2xl sm:text-3xl font-black -rotate-1 inline-block hand-title">
               {user.name}
             </h1>
-            <p className="text-gray-500 text-sm">{posts.length} 件の投稿</p>
+            <p className="text-gray-500 text-sm">
+              {t('profile.postCount', { count: posts.length })}
+            </p>
           </div>
         </div>
         {isSelf && (
           <Button asChild variant="outline">
-            <Link href="/profile/edit">プロフィールを編集</Link>
+            <Link href="/profile/edit">{t('profile.editProfile')}</Link>
           </Button>
         )}
       </div>
@@ -65,7 +69,7 @@ export default function ProfilePage({ params }: ProfilePageProps) {
           ))}
         </div>
       ) : (
-        <p className="text-center text-gray-500 py-12">まだ投稿がありません</p>
+        <p className="text-center text-gray-500 py-12">{t('profile.noPosts')}</p>
       )}
     </div>
   );

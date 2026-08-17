@@ -6,10 +6,15 @@ import {
   syncPostLikeCounts,
 } from '@/lib/ranking';
 import { localStore } from '@/lib/data/local-store';
+import {
+  hydrateLocalStoreFromStorage,
+  persistLocalStore,
+} from '@/lib/data/local-persistence';
 import type {
   CreatePostInput,
   CreateUserInput,
   DataRepository,
+  HomePageData,
   PostRankingOptions,
   UpdatePostInput,
   UserRankingOptions,
@@ -26,6 +31,14 @@ import type {
   User,
   UserRankingEntry,
 } from '@/types';
+
+if (typeof window !== 'undefined') {
+  hydrateLocalStoreFromStorage();
+}
+
+function saveLocalStore() {
+  persistLocalStore();
+}
 
 function attachUser(post: Post): Post {
   const user = localStore.users.find((u) => u.id === post.userId);
@@ -63,6 +76,47 @@ export class LocalDataRepository implements DataRepository {
     return [...localStore.tags].sort((a, b) => a.order - b.order);
   }
 
+  async getHomePageData(): Promise<HomePageData> {
+    syncPostLikeCounts(localStore.posts, localStore.likes);
+    const posts = localStore.posts.map(attachUser);
+
+    const recentPosts = [...posts]
+      .sort(
+        (a, b) =>
+          new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+      )
+      .slice(0, 8);
+
+    const popularPosts = [...posts]
+      .sort((a, b) => b.likeCount - a.likeCount)
+      .slice(0, 6);
+
+    const heroCandidates = posts
+      .filter((post) => post.likeCount > 10)
+      .sort((a, b) => b.likeCount - a.likeCount)
+      .slice(0, 10);
+
+    const [categories, tags, rankingEntries] = await Promise.all([
+      this.getMajorCategories(),
+      this.getTags(),
+      this.getPostRankings({ period: 'week', limit: 5 }),
+    ]);
+
+    return {
+      recentPosts,
+      popularPosts,
+      heroCandidates,
+      rankingEntries,
+      stats: {
+        postCount: posts.length,
+        likeCount: posts.reduce((sum, post) => sum + post.likeCount, 0),
+        userCount: new Set(posts.map((post) => post.userId)).size,
+      },
+      categories,
+      tags,
+    };
+  }
+
   async getPosts(viewerUserId?: string) {
     return this.visiblePosts(viewerUserId);
   }
@@ -90,8 +144,10 @@ export class LocalDataRepository implements DataRepository {
   async getProfile(id: string) {
     const user = await this.getUser(id);
     if (!user) return null;
+    const stored = localStore.users.find((u) => u.id === id);
     return {
       ...user,
+      email: stored?.email,
       role: 'user' as const,
       createdAt: new Date().toISOString(),
     };
@@ -116,6 +172,7 @@ export class LocalDataRepository implements DataRepository {
     };
 
     localStore.posts.unshift(post);
+    saveLocalStore();
     return post;
   }
 
@@ -130,6 +187,7 @@ export class LocalDataRepository implements DataRepository {
       tagIds: input.tagIds ?? current.tagIds,
     };
     localStore.posts[index] = updated;
+    saveLocalStore();
     return attachUser(updated);
   }
 
@@ -150,9 +208,14 @@ export class LocalDataRepository implements DataRepository {
     localStore.hiddenPosts = localStore.hiddenPosts.filter(
       (h) => !idSet.has(h.postId)
     );
+    saveLocalStore();
   }
 
   async checkPostFrequency(userId: string, majorCategoryId: string) {
+    // ローカル開発では投稿テストを優先し、週1制限をスキップ
+    if (process.env.NODE_ENV === 'development') {
+      return { canPost: true };
+    }
     return checkPostFrequency(localStore.posts, userId, majorCategoryId);
   }
 
@@ -364,6 +427,7 @@ export class LocalDataRepository implements DataRepository {
       avatarUrl: input.avatarUrl ?? '👤',
     };
     localStore.users.push(user);
+    saveLocalStore();
     return user;
   }
 
@@ -378,7 +442,13 @@ export class LocalDataRepository implements DataRepository {
   async registerUser(input: CreateUserInput): Promise<User> {
     const user = await this.createUser(input);
     (user as User & { email?: string }).email = input.email.trim().toLowerCase();
+    saveLocalStore();
     return user;
+  }
+
+  async resetToSeed() {
+    localStore.reset();
+    saveLocalStore();
   }
 }
 

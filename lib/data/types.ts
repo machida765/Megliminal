@@ -54,10 +54,28 @@ export type UserRankingOptions = {
   limit?: number;
 };
 
+export type HomePageStats = {
+  postCount: number;
+  likeCount: number;
+  userCount: number;
+};
+
+/** トップページ用の共有スナップショット（全ユーザー共通） */
+export type HomePageData = {
+  recentPosts: Post[];
+  popularPosts: Post[];
+  rankingEntries: PostRankingEntry[];
+  heroCandidates: Post[];
+  stats: HomePageStats;
+  categories: MajorCategory[];
+  tags: Tag[];
+};
+
 export interface DataRepository {
   getMajorCategories(): Promise<MajorCategory[]>;
   getSubCategories(): Promise<SubCategory[]>;
   getTags(): Promise<Tag[]>;
+  getHomePageData(): Promise<HomePageData>;
   getPosts(viewerUserId?: string): Promise<Post[]>;
   getPost(id: string, viewerUserId?: string): Promise<Post | null>;
   getPostsByUser(userId: string, viewerUserId?: string): Promise<Post[]>;

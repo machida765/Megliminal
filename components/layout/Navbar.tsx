@@ -1,14 +1,15 @@
 'use client';
 
 import Link from 'next/link';
-import { APP_NAME } from '@/lib/config/app';
 import { Button } from '@/components/ui/button';
 import { Plus, LogIn, LogOut, Trophy, Bookmark } from 'lucide-react';
 import { useAuth } from '@/components/providers/AuthProvider';
-import { DataSourceBadge } from '@/components/DataSourceBadge';
+import { useTranslations } from '@/components/providers/LocaleProvider';
+import { DataSourceBadge } from '@/components/layout/DataSourceBadge';
 
 export function Navbar() {
   const { user, profile, loading, signOut } = useAuth();
+  const { t, messages } = useTranslations();
 
   const handleSignOut = async () => {
     await signOut();
@@ -24,12 +25,12 @@ export function Navbar() {
             <div className="min-w-0">
               <div className="flex items-center gap-2">
                 <h1 className="text-xl font-black text-[#3b2a22] leading-none hand-title">
-                  {APP_NAME}
+                  {messages.app.name}
                 </h1>
                 <DataSourceBadge />
               </div>
               <p className="text-[11px] text-[#b56a38] leading-none mt-1 hidden sm:block truncate">
-                まちの掲示板みたいな、おすすめ
+                {messages.app.navbarSubtitle}
               </p>
             </div>
           </Link>
@@ -38,21 +39,21 @@ export function Navbar() {
             <Link href="/ranking">
               <Button variant="ghost" size="sm" className="gap-1.5 px-2 sm:px-3 rotate-1">
                 <Trophy className="w-4 h-4" />
-                <span className="hidden md:inline">ランキング</span>
+                <span className="hidden md:inline">{t('nav.ranking')}</span>
               </Button>
             </Link>
 
             <Link href="/bookmarks">
               <Button variant="ghost" size="sm" className="gap-1.5 px-2 sm:px-3 -rotate-1">
                 <Bookmark className="w-4 h-4" />
-                <span className="hidden md:inline">保存</span>
+                <span className="hidden md:inline">{t('nav.bookmarks')}</span>
               </Button>
             </Link>
 
             <Link href="/create">
               <Button size="sm" className="gap-1.5 rotate-1">
                 <Plus className="w-4 h-4" />
-                <span className="hidden sm:inline">投稿</span>
+                <span className="hidden sm:inline">{t('nav.create')}</span>
               </Button>
             </Link>
 
@@ -74,14 +75,14 @@ export function Navbar() {
                   onClick={handleSignOut}
                 >
                   <LogOut className="w-4 h-4" />
-                  <span className="hidden sm:inline">退出</span>
+                  <span className="hidden sm:inline">{t('nav.logout')}</span>
                 </Button>
               </>
             ) : (
               <Link href="/login">
                 <Button variant="outline" size="sm" className="gap-1.5 -rotate-1">
                   <LogIn className="w-4 h-4" />
-                  <span className="hidden sm:inline">ログイン</span>
+                  <span className="hidden sm:inline">{t('nav.login')}</span>
                 </Button>
               </Link>
             )}

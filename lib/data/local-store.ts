@@ -17,8 +17,25 @@ import type {
   User,
 } from '@/types';
 
+export type LocalStoreUser = User & { email?: string };
+
 function clone<T>(value: T): T {
   return JSON.parse(JSON.stringify(value)) as T;
+}
+
+/** ローカルログイン用のテストメール（パスワードは任意） */
+const DEV_USER_EMAILS: Record<string, string> = {
+  'user-001': 'taro@test.local',
+  'user-002': 'hanako@test.local',
+  'user-003': 'jiro@test.local',
+  'user-004': 'yuki@test.local',
+};
+
+function seedUsers(): LocalStoreUser[] {
+  return clone(SEED_USERS).map((user) => ({
+    ...user,
+    email: DEV_USER_EMAILS[user.id],
+  }));
 }
 
 /** 投稿の likeCount に合わせて、期間分散したいいねシードを生成 */
@@ -52,12 +69,12 @@ function generateSeedLikes(posts: Post[]): Like[] {
   return likes;
 }
 
-/** ローカル開発用のインメモリストア（ページリロードでリセット） */
+/** ローカル開発用ストア（ブラウザでは localStorage に永続化） */
 class LocalStore {
   majorCategories: MajorCategory[] = clone(SEED_CATEGORIES);
   subCategories: SubCategory[] = clone(SEED_SUB_CATEGORIES);
   tags: Tag[] = clone(SEED_TAGS);
-  users: User[] = clone(SEED_USERS);
+  users: LocalStoreUser[] = seedUsers();
   posts: Post[] = clone(SEED_POSTS);
   likes: Like[] = generateSeedLikes(clone(SEED_POSTS));
   bookmarks: Bookmark[] = [];
@@ -68,7 +85,7 @@ class LocalStore {
     this.majorCategories = clone(SEED_CATEGORIES);
     this.subCategories = clone(SEED_SUB_CATEGORIES);
     this.tags = clone(SEED_TAGS);
-    this.users = clone(SEED_USERS);
+    this.users = seedUsers();
     this.posts = clone(SEED_POSTS);
     this.likes = generateSeedLikes(this.posts);
     this.bookmarks = [];
