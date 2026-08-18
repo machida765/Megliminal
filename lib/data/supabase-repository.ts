@@ -20,6 +20,7 @@ import {
   type SupabasePostRow,
 } from '@/lib/data/supabase-posts';
 import type {
+  Bookmark,
   Like,
   MajorCategory,
   Post,
@@ -37,9 +38,8 @@ function notReady(): never {
   );
 }
 
-type PostsSelectQuery = ReturnType<
-  ReturnType<SupabaseClient['from']>['select']
->;
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type PostsSelectQuery = any;
 
 /** Supabase 実装 */
 export class SupabaseDataRepository implements DataRepository {
@@ -75,7 +75,7 @@ export class SupabaseDataRepository implements DataRepository {
   private async fetchPosts(
     applyFilter?: (query: PostsSelectQuery) => PostsSelectQuery
   ): Promise<Post[]> {
-    let query = this.client.from('posts').select(POST_SELECT);
+    let query: PostsSelectQuery = this.client.from('posts').select(POST_SELECT);
 
     if (applyFilter) {
       query = applyFilter(query);
@@ -90,7 +90,7 @@ export class SupabaseDataRepository implements DataRepository {
       return [];
     }
 
-    return (data as SupabasePostRow[]).map(mapSupabasePost);
+    return (data as unknown as SupabasePostRow[]).map(mapSupabasePost);
   }
 
   private async syncPostTags(postId: string, tagIds: string[]) {
@@ -199,6 +199,7 @@ export class SupabaseDataRepository implements DataRepository {
   async getHomePageData(): Promise<HomePageData> {
     const [
       categories,
+      subCategories,
       tags,
       recentPosts,
       popularPosts,
@@ -207,6 +208,7 @@ export class SupabaseDataRepository implements DataRepository {
       stats,
     ] = await Promise.all([
       this.getMajorCategories(),
+      this.getSubCategories(),
       this.getTags(),
       this.fetchPosts((q) =>
         q.order('created_at', { ascending: false }).limit(8)
@@ -231,6 +233,7 @@ export class SupabaseDataRepository implements DataRepository {
       heroCandidates,
       stats,
       categories,
+      subCategories,
       tags,
     };
   }
@@ -257,7 +260,7 @@ export class SupabaseDataRepository implements DataRepository {
     }
 
     if (!data) return null;
-    return mapSupabasePost(data as SupabasePostRow);
+    return mapSupabasePost(data as unknown as SupabasePostRow);
   }
 
   async getPostsByUser(userId: string, viewerUserId?: string): Promise<Post[]> {
@@ -325,7 +328,7 @@ export class SupabaseDataRepository implements DataRepository {
       if (created) return created;
     }
 
-    return mapSupabasePost(data as SupabasePostRow);
+    return mapSupabasePost(data as unknown as SupabasePostRow);
   }
 
   async updatePost(id: string, input: UpdatePostInput): Promise<Post> {
@@ -503,15 +506,15 @@ export class SupabaseDataRepository implements DataRepository {
     return false;
   }
 
-  async addBookmark() {
+  async addBookmark(): Promise<Bookmark> {
     notReady();
   }
 
-  async removeBookmark() {
+  async removeBookmark(): Promise<void> {
     notReady();
   }
 
-  async reportPost() {
+  async reportPost(): Promise<Report> {
     notReady();
   }
 

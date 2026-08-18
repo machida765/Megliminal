@@ -303,7 +303,13 @@ function SearchPageInner() {
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
         {!loading && filteredPosts.length > 0 ? (
           filteredPosts.map((post) => (
-            <PostCard key={post.id} post={post} categories={categories} flat />
+            <PostCard
+              key={post.id}
+              post={post}
+              categories={categories}
+              subCategories={subCategories}
+              flat
+            />
           ))
         ) : (
           <div className="col-span-full func-surface p-10 text-center">

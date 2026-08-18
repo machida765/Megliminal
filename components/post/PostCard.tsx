@@ -25,8 +25,10 @@ export function PostCard({
   flat = false,
 }: PostCardProps) {
   const { locale } = useTranslations();
-  const { categories: categoriesFromHook } = useMajorCategories();
-  const { subCategories: subCategoriesFromHook } = useSubCategories();
+  const { categories: categoriesFromHook } = useMajorCategories(!categoriesProp);
+  const { subCategories: subCategoriesFromHook } = useSubCategories(
+    !subCategoriesProp
+  );
   const categories = categoriesProp ?? categoriesFromHook;
   const subCategories = subCategoriesProp ?? subCategoriesFromHook;
 
@@ -47,14 +49,18 @@ export function PostCard({
     ? `${category?.name ?? ''} › ${subCategory.name}`
     : category?.name;
   const CategoryIcon = category?.icon
-    ? (LucideIcons as Record<string, React.ComponentType<{ className?: string }>>)[
-        category.icon
-      ]
+    ? (
+        LucideIcons as unknown as Record<
+          string,
+          React.ComponentType<{ className?: string }>
+        >
+      )[category.icon]
     : undefined;
 
   return (
     <Link
       href={`/post/${post.id}`}
+      prefetch={false}
       className={cn(
         'block h-full p-4',
         flat

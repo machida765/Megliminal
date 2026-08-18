@@ -10,9 +10,6 @@ import {
 import { useTranslations } from '@/components/providers/LocaleProvider';
 import type { MajorCategory, SubCategory } from '@/types';
 
-const ALL = '__all__';
-const NONE = '__none__';
-
 type CategoryPickerProps = {
   majorCategories: MajorCategory[];
   subCategories: SubCategory[];
@@ -22,6 +19,12 @@ type CategoryPickerProps = {
   onSubChange: (subCategoryId: string | null) => void;
   majorLabel?: string;
   subLabel?: string;
+  /** 大ジャンル未指定の選択肢名。未指定時は i18n */
+  allMajorLabel?: string;
+  /** 小ジャンル未指定（すべて）の選択肢名。未指定時は i18n */
+  allSubLabel?: string;
+  /** 小ジャンル未指定（任意）の選択肢名。未指定時は i18n */
+  noneSubLabel?: string;
   subOptional?: boolean;
   majorRequired?: boolean;
 };
@@ -35,6 +38,9 @@ export function CategoryPicker({
   onSubChange,
   majorLabel,
   subLabel,
+  allMajorLabel,
+  allSubLabel,
+  noneSubLabel,
   subOptional = false,
   majorRequired = false,
 }: CategoryPickerProps) {
@@ -42,6 +48,10 @@ export function CategoryPicker({
   const majorLabelText = majorLabel ?? t('category.major');
   const subLabelText =
     subLabel ?? (subOptional ? t('category.subOptional') : t('category.sub'));
+  const allMajor = allMajorLabel ?? t('common.all');
+  const allSub = allSubLabel ?? t('common.all');
+  const noneSub = noneSubLabel ?? t('common.none');
+  const emptySub = subOptional ? noneSub : allSub;
 
   const activeMajorCategories = majorCategories.filter((c) => c.isActive);
   const availableSubs = subCategories.filter(
@@ -55,52 +65,43 @@ export function CategoryPicker({
   );
 
   const handleMajorChange = (value: string | null) => {
-    if (!value) {
-      onMajorChange(null);
-      return;
-    }
-    const nextMajor = majorRequired ? value : value === ALL ? null : value;
+    const nextMajor =
+      !value || (!majorRequired && value === allMajor) ? null : value;
     onMajorChange(nextMajor);
-    if (
-      subCategoryId &&
-      subCategories.find((sub) => sub.id === subCategoryId)?.majorCategoryId !==
-        nextMajor
-    ) {
-      onSubChange(null);
-    }
+    const sub = subCategories.find((s) => s.id === subCategoryId);
+    if (sub && sub.majorCategoryId !== nextMajor) onSubChange(null);
   };
 
   const handleSubChange = (value: string | null) => {
-    if (!value || value === ALL || value === NONE) {
-      onSubChange(null);
-      return;
-    }
-    onSubChange(value);
+    onSubChange(!value || value === emptySub ? null : value);
   };
 
-  const majorSelectValue = majorCategoryId ?? undefined;
-  const subSelectValue = subCategoryId ?? undefined;
-  const selectedMajor = activeMajorCategories.find((c) => c.id === majorCategoryId);
-  const selectedSub = availableSubs.find((s) => s.id === subCategoryId);
+  const selectedMajorName = activeMajorCategories.find(
+    (c) => c.id === majorCategoryId
+  )?.name;
+  const selectedSubName = availableSubs.find((s) => s.id === subCategoryId)?.name;
 
   return (
     <div className="space-y-4">
       <div>
         <p className="text-xs font-bold text-[#8a6a52] mb-2">{majorLabelText}</p>
-        <Select value={majorSelectValue} onValueChange={handleMajorChange}>
+        <Select
+          value={majorCategoryId ?? (majorRequired ? undefined : allMajor)}
+          onValueChange={handleMajorChange}
+        >
           <SelectTrigger className="w-full min-w-0 bg-white border-[#e4d2b8]">
             <SelectValue
               placeholder={
-                majorRequired ? t('category.selectMajor') : t('category.allCategories')
+                majorRequired ? t('category.selectMajor') : allMajor
               }
             >
-              {selectedMajor?.name}
+              {selectedMajorName ?? (majorRequired ? undefined : allMajor)}
             </SelectValue>
           </SelectTrigger>
           <SelectContent>
             {!majorRequired && (
-              <SelectItem value={ALL} label={t('category.allCategories')}>
-                {t('category.allCategories')}
+              <SelectItem value={allMajor} label={allMajor}>
+                {allMajor}
               </SelectItem>
             )}
             {activeMajorCategories.map((category) => (
@@ -116,7 +117,7 @@ export function CategoryPicker({
         <div>
           <p className="text-xs font-bold text-[#8a6a52] mb-2">{subLabelText}</p>
           <Select
-            value={subSelectValue}
+            value={subCategoryId ?? emptySub}
             onValueChange={handleSubChange}
             disabled={!majorCategoryId || availableSubs.length === 0}
           >
@@ -127,24 +128,16 @@ export function CategoryPicker({
                     ? t('category.selectMajorFirst')
                     : availableSubs.length === 0
                       ? t('category.noSubCategories')
-                      : subOptional
-                        ? t('common.none')
-                        : t('common.all')
+                      : emptySub
                 }
               >
-                {selectedSub?.name}
+                {selectedSubName ?? emptySub}
               </SelectValue>
             </SelectTrigger>
             <SelectContent>
-              {subOptional ? (
-                <SelectItem value={NONE} label={t('common.none')}>
-                  {t('common.none')}
-                </SelectItem>
-              ) : (
-                <SelectItem value={ALL} label={t('common.all')}>
-                  {t('common.all')}
-                </SelectItem>
-              )}
+              <SelectItem value={emptySub} label={emptySub}>
+                {emptySub}
+              </SelectItem>
               {availableSubs.map((sub) => (
                 <SelectItem key={sub.id} value={sub.id} label={sub.name}>
                   {sub.name}

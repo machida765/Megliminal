@@ -1,22 +1,32 @@
 'use client';
 
-import { getDataSourceLabel } from '@/lib/config/data-source';
+import { getDataSourceKind, getDataSourceLabel } from '@/lib/config/data-source';
+
+const STYLES = {
+  local: 'bg-[#d1fae5] text-[#065f46]',
+  docker: 'bg-[#dbeafe] text-[#1e40af]',
+  cloud: 'bg-[#ffedd5] text-[#9a3412]',
+} as const;
+
+const TITLES = {
+  local: 'ブラウザ内のデータ（Supabase 未使用）',
+  docker: 'PC 上の Docker / ローカル Supabase',
+  cloud: 'ネット上の Supabase（クラウド）',
+} as const;
 
 /** 開発中: 現在のデータソースを表示 */
 export function DataSourceBadge() {
-  if (process.env.NODE_ENV === 'production') return null;
-
+  const kind = getDataSourceKind();
   const label = getDataSourceLabel();
-  const isLocal = label === 'Local';
+
+  if (process.env.NODE_ENV === 'production' && kind === 'cloud') {
+    return null;
+  }
 
   return (
     <span
-      className={`hidden sm:inline-flex items-center rounded-sm px-1.5 py-0.5 text-[10px] font-black tracking-wide rotate-3 ${
-        isLocal
-          ? 'bg-[#d1fae5] text-[#065f46]'
-          : 'bg-[#e0f2fe] text-[#075985]'
-      }`}
-      title="NEXT_PUBLIC_DATA_SOURCE で切り替え"
+      className={`inline-flex items-center rounded-sm px-1.5 py-0.5 text-[10px] font-black tracking-wide rotate-3 ${STYLES[kind]}`}
+      title={TITLES[kind]}
     >
       {label}
     </span>

@@ -26,7 +26,12 @@ const ICON_OPTIONS = [
 
 function Icon({ name, className = 'w-4 h-4' }: { name?: string; className?: string }) {
   if (!name) return null;
-  const C = (LucideIcons as Record<string, React.ComponentType<{ className?: string }>>)[name];
+  const C = (
+    LucideIcons as unknown as Record<
+      string,
+      React.ComponentType<{ className?: string }>
+    >
+  )[name];
   return C ? <C className={className} /> : null;
 }
 

@@ -35,6 +35,7 @@ export function HomePageClient({
   heroCandidates,
   stats,
   categories,
+  subCategories,
   tags,
 }: HomePageClientProps) {
   const router = useRouter();
@@ -190,7 +191,12 @@ export function HomePageClient({
         {recentPosts.length > 0 ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             {recentPosts.map((post) => (
-              <PostCard key={post.id} post={post} categories={categories} />
+              <PostCard
+                key={post.id}
+                post={post}
+                categories={categories}
+                subCategories={subCategories}
+              />
             ))}
           </div>
         ) : (
@@ -205,7 +211,12 @@ export function HomePageClient({
         {popularPosts.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {popularPosts.map((post) => (
-              <PostCard key={post.id} post={post} categories={categories} />
+              <PostCard
+                key={post.id}
+                post={post}
+                categories={categories}
+                subCategories={subCategories}
+              />
             ))}
           </div>
         ) : (

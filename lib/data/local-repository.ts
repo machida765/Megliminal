@@ -96,8 +96,9 @@ export class LocalDataRepository implements DataRepository {
       .sort((a, b) => b.likeCount - a.likeCount)
       .slice(0, 10);
 
-    const [categories, tags, rankingEntries] = await Promise.all([
+    const [categories, subCategories, tags, rankingEntries] = await Promise.all([
       this.getMajorCategories(),
+      this.getSubCategories(),
       this.getTags(),
       this.getPostRankings({ period: 'week', limit: 5 }),
     ]);
@@ -113,6 +114,7 @@ export class LocalDataRepository implements DataRepository {
         userCount: new Set(posts.map((post) => post.userId)).size,
       },
       categories,
+      subCategories,
       tags,
     };
   }

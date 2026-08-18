@@ -68,6 +68,7 @@ export type HomePageData = {
   heroCandidates: Post[];
   stats: HomePageStats;
   categories: MajorCategory[];
+  subCategories: SubCategory[];
   tags: Tag[];
 };
 

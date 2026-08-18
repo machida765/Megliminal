@@ -20,7 +20,7 @@ export function Navbar() {
     <nav className="sticky top-0 z-50 border-b-[3px] border-[#e8c9a4] bg-[#fff8ee]/95 backdrop-blur-sm">
       <div className="max-w-6xl mx-auto px-3 sm:px-6 py-3">
         <div className="flex items-center justify-between gap-3">
-          <Link href="/" className="flex items-center gap-2.5 min-w-0 -rotate-1">
+          <Link href="/" prefetch={false} className="flex items-center gap-2.5 min-w-0 -rotate-1">
             <div className="text-2xl rotate-6">🧡</div>
             <div className="min-w-0">
               <div className="flex items-center gap-2">
@@ -36,21 +36,21 @@ export function Navbar() {
           </Link>
 
           <div className="flex items-center gap-1.5 sm:gap-2 flex-shrink-0">
-            <Link href="/ranking">
+            <Link href="/ranking" prefetch={false}>
               <Button variant="ghost" size="sm" className="gap-1.5 px-2 sm:px-3 rotate-1">
                 <Trophy className="w-4 h-4" />
                 <span className="hidden md:inline">{t('nav.ranking')}</span>
               </Button>
             </Link>
 
-            <Link href="/bookmarks">
+            <Link href="/bookmarks" prefetch={false}>
               <Button variant="ghost" size="sm" className="gap-1.5 px-2 sm:px-3 -rotate-1">
                 <Bookmark className="w-4 h-4" />
                 <span className="hidden md:inline">{t('nav.bookmarks')}</span>
               </Button>
             </Link>
 
-            <Link href="/create">
+            <Link href="/create" prefetch={false}>
               <Button size="sm" className="gap-1.5 rotate-1">
                 <Plus className="w-4 h-4" />
                 <span className="hidden sm:inline">{t('nav.create')}</span>
@@ -63,6 +63,7 @@ export function Navbar() {
               <>
                 <Link
                   href={`/profile/${user.id}`}
+                  prefetch={false}
                   className="hidden lg:flex items-center gap-2 text-sm font-bold text-[#3b2a22] hover:text-[#c45c28] max-w-[120px] -rotate-1"
                 >
                   <span>{profile.avatarUrl}</span>
@@ -79,7 +80,7 @@ export function Navbar() {
                 </Button>
               </>
             ) : (
-              <Link href="/login">
+              <Link href="/login" prefetch={false}>
                 <Button variant="outline" size="sm" className="gap-1.5 -rotate-1">
                   <LogIn className="w-4 h-4" />
                   <span className="hidden sm:inline">{t('nav.login')}</span>

@@ -16,52 +16,153 @@ import type {
   UserRankingSort,
 } from '@/types';
 
-export function useMajorCategories() {
-  const [categories, setCategories] = useState<MajorCategory[]>([]);
-  const [loading, setLoading] = useState(true);
+let majorCategoriesCache: MajorCategory[] | null = null;
+let majorCategoriesInflight: Promise<MajorCategory[]> | null = null;
+let subCategoriesCache: SubCategory[] | null = null;
+let subCategoriesInflight: Promise<SubCategory[]> | null = null;
+let tagsCache: Tag[] | null = null;
+let tagsInflight: Promise<Tag[]> | null = null;
+
+async function loadMajorCategories(force = false): Promise<MajorCategory[]> {
+  if (!force && majorCategoriesCache) return majorCategoriesCache;
+  if (!force && majorCategoriesInflight) return majorCategoriesInflight;
+  majorCategoriesInflight = getRepository()
+    .getMajorCategories()
+    .then((data) => {
+      majorCategoriesCache = data;
+      return data;
+    })
+    .finally(() => {
+      majorCategoriesInflight = null;
+    });
+  return majorCategoriesInflight;
+}
+
+async function loadSubCategories(force = false): Promise<SubCategory[]> {
+  if (!force && subCategoriesCache) return subCategoriesCache;
+  if (!force && subCategoriesInflight) return subCategoriesInflight;
+  subCategoriesInflight = getRepository()
+    .getSubCategories()
+    .then((data) => {
+      subCategoriesCache = data;
+      return data;
+    })
+    .finally(() => {
+      subCategoriesInflight = null;
+    });
+  return subCategoriesInflight;
+}
+
+async function loadTags(force = false): Promise<Tag[]> {
+  if (!force && tagsCache) return tagsCache;
+  if (!force && tagsInflight) return tagsInflight;
+  tagsInflight = getRepository()
+    .getTags()
+    .then((data) => {
+      tagsCache = data;
+      return data;
+    })
+    .finally(() => {
+      tagsInflight = null;
+    });
+  return tagsInflight;
+}
+
+export function useMajorCategories(enabled = true) {
+  const [categories, setCategories] = useState<MajorCategory[]>(
+    () => majorCategoriesCache ?? []
+  );
+  const [loading, setLoading] = useState(
+    () => enabled && majorCategoriesCache === null
+  );
 
   const reload = useCallback(async () => {
     setLoading(true);
-    const data = await getRepository().getMajorCategories();
+    const data = await loadMajorCategories(true);
     setCategories(data);
     setLoading(false);
   }, []);
 
   useEffect(() => {
-    reload();
-  }, [reload]);
+    if (!enabled) {
+      setLoading(false);
+      return;
+    }
+    let cancelled = false;
+    setLoading(majorCategoriesCache === null);
+    loadMajorCategories().then((data) => {
+      if (!cancelled) {
+        setCategories(data);
+        setLoading(false);
+      }
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [enabled]);
 
   return { categories, loading, reload };
 }
 
-export function useSubCategories() {
-  const [subCategories, setSubCategories] = useState<SubCategory[]>([]);
-  const [loading, setLoading] = useState(true);
+export function useSubCategories(enabled = true) {
+  const [subCategories, setSubCategories] = useState<SubCategory[]>(
+    () => subCategoriesCache ?? []
+  );
+  const [loading, setLoading] = useState(
+    () => enabled && subCategoriesCache === null
+  );
 
   const reload = useCallback(async () => {
     setLoading(true);
-    const data = await getRepository().getSubCategories();
+    const data = await loadSubCategories(true);
     setSubCategories(data);
     setLoading(false);
   }, []);
 
   useEffect(() => {
-    reload();
-  }, [reload]);
+    if (!enabled) {
+      setLoading(false);
+      return;
+    }
+    let cancelled = false;
+    setLoading(subCategoriesCache === null);
+    loadSubCategories().then((data) => {
+      if (!cancelled) {
+        setSubCategories(data);
+        setLoading(false);
+      }
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [enabled]);
 
   return { subCategories, loading, reload };
 }
 
-export function useTags() {
-  const [tags, setTags] = useState<Tag[]>([]);
-  const [loading, setLoading] = useState(true);
+export function useTags(enabled = true) {
+  const [tags, setTags] = useState<Tag[]>(() => tagsCache ?? []);
+  const [loading, setLoading] = useState(
+    () => enabled && tagsCache === null
+  );
 
   useEffect(() => {
-    getRepository()
-      .getTags()
-      .then(setTags)
-      .finally(() => setLoading(false));
-  }, []);
+    if (!enabled) {
+      setLoading(false);
+      return;
+    }
+    let cancelled = false;
+    setLoading(tagsCache === null);
+    loadTags().then((data) => {
+      if (!cancelled) {
+        setTags(data);
+        setLoading(false);
+      }
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [enabled]);
 
   return { tags, loading };
 }
