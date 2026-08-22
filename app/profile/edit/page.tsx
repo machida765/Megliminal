@@ -1,5 +1,6 @@
 'use client';
 
+/** プロフィール編集 `/profile/edit`。フォームはこのファイル。保存は updateUser。 */
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
@@ -7,6 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useAuth } from '@/components/providers/AuthProvider';
 import { useTranslations } from '@/components/providers/LocaleProvider';
+import { UserAvatar } from '@/components/user/UserAvatar';
 import { getRepository } from '@/lib/data';
 
 export default function ProfileEditPage() {
@@ -71,11 +73,21 @@ export default function ProfileEditPage() {
               <label className="block text-sm font-semibold">
                 {t('profile.edit.avatar')}
               </label>
-              <Input
-                value={avatarUrl}
-                onChange={(e) => setAvatarUrl(e.target.value)}
-                placeholder={t('profile.edit.avatarPlaceholder')}
-              />
+              <div className="flex items-center gap-3">
+                <UserAvatar
+                  userId={user.id}
+                  name={name}
+                  avatarUrl={avatarUrl}
+                  className="w-12 h-12"
+                />
+                <Input
+                  value={avatarUrl}
+                  onChange={(e) => setAvatarUrl(e.target.value)}
+                  placeholder={t('profile.edit.avatarPlaceholder')}
+                  className="flex-1"
+                />
+              </div>
+              <p className="text-xs text-gray-500">{t('profile.edit.avatarHint')}</p>
             </div>
             <div className="flex flex-col sm:flex-row gap-3 pt-2">
               <Button type="submit" disabled={saving} className="flex-1">

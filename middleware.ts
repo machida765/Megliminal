@@ -1,12 +1,8 @@
-import { type NextRequest, NextResponse } from 'next/server';
-import { isSupabaseDataSource } from '@/lib/config/data-source';
+/** 全リクエスト前処理。セッション Cookie を更新する。 */
+import { type NextRequest } from 'next/server';
 import { updateSession } from '@/lib/supabase/middleware';
 
 export async function middleware(request: NextRequest) {
-  // ローカルデータモードでは認証リダイレクトしない（画面開発優先）
-  if (!isSupabaseDataSource()) {
-    return NextResponse.next();
-  }
   return await updateSession(request);
 }
 

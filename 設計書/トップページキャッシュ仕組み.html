@@ -1,0 +1,332 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>トップページキャッシュの仕組み解説 | Megliminal</title>
+  <style>
+    :root {
+      --bg-main: #faf4eb;
+      --surface: #ffffff;
+      --border: #e8c9a4;
+      --text-main: #3b2a22;
+      --text-sub: #7a5c4d;
+      --primary: #c45c28;
+      --primary-light: #fbebe2;
+      --success-bg: #d1fae5;
+      --success-text: #065f46;
+      --info-bg: #dbeafe;
+      --info-text: #1e40af;
+      --warning-bg: #fef3c7;
+      --warning-text: #92400e;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", "Hiragino Kaku Gothic ProN", "Yu Gothic", sans-serif;
+      background-color: var(--bg-main);
+      color: var(--text-main);
+      line-height: 1.7;
+      padding: 24px 16px;
+    }
+
+    .container {
+      max-width: 900px;
+      margin: 0 auto;
+    }
+
+    header {
+      background-color: var(--surface);
+      border: 3px solid var(--border);
+      border-radius: 12px;
+      padding: 24px 32px;
+      margin-bottom: 24px;
+      box-shadow: 0 4px 0 var(--border);
+    }
+
+    header h1 {
+      font-size: 24px;
+      font-weight: 900;
+      color: var(--text-main);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    header p {
+      color: var(--text-sub);
+      font-size: 14px;
+      margin-top: 8px;
+    }
+
+    .card {
+      background: var(--surface);
+      border: 2px solid var(--border);
+      border-radius: 12px;
+      padding: 24px;
+      margin-bottom: 24px;
+    }
+
+    .card h2 {
+      font-size: 18px;
+      font-weight: 800;
+      border-bottom: 2px dashed var(--border);
+      padding-bottom: 10px;
+      margin-bottom: 16px;
+      color: var(--primary);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .badge {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 4px;
+      font-size: 12px;
+      font-weight: 700;
+    }
+    .badge-success { background: var(--success-bg); color: var(--success-text); }
+    .badge-info { background: var(--info-bg); color: var(--info-text); }
+    .badge-warning { background: var(--warning-bg); color: var(--warning-text); }
+
+    /* 図解ダイアグラムスタイル */
+    .flow-diagram {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      margin: 20px 0;
+    }
+
+    .flow-step {
+      display: grid;
+      grid-template-columns: 100px 1fr;
+      gap: 16px;
+      align-items: center;
+      background: #fff8f0;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 16px;
+    }
+
+    .step-tag {
+      font-weight: 800;
+      font-size: 13px;
+      text-align: center;
+      padding: 6px 10px;
+      border-radius: 6px;
+    }
+
+    .step-content h4 {
+      font-size: 15px;
+      margin-bottom: 4px;
+    }
+
+    .step-content p {
+      font-size: 13px;
+      color: var(--text-sub);
+    }
+
+    /* 対比テーブル */
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 12px;
+      font-size: 14px;
+    }
+
+    th, td {
+      border: 1px solid var(--border);
+      padding: 12px;
+      text-align: left;
+    }
+
+    th {
+      background: #fbf0e4;
+      font-weight: 700;
+    }
+
+    .highlight-box {
+      background-color: var(--primary-light);
+      border-left: 4px solid var(--primary);
+      padding: 16px;
+      border-radius: 0 8px 8px 0;
+      margin: 16px 0;
+      font-size: 14px;
+    }
+
+    .code-block {
+      background: #2d241e;
+      color: #f3e8de;
+      padding: 14px;
+      border-radius: 6px;
+      font-family: monospace;
+      font-size: 13px;
+      overflow-x: auto;
+      margin: 10px 0;
+    }
+
+    ul {
+      padding-left: 20px;
+      font-size: 14px;
+      color: var(--text-main);
+    }
+
+    li {
+      margin-bottom: 6px;
+    }
+
+    footer {
+      text-align: center;
+      font-size: 12px;
+      color: var(--text-sub);
+      margin-top: 40px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>⚡ トップページキャッシュ (ISR) の仕組み解説</h1>
+      <p>Megliminal アプリにおける「トップページ高速化」と「DB負荷・通信量削減」の内部構造を図解した資料です。</p>
+    </header>
+
+    <!-- Section 1: 概要 -->
+    <div class="card">
+      <h2>1. どのような仕組みか（概要）</h2>
+      <p>
+        トップページ（<code>/</code>）は、ユーザーがアクセスするたびに Supabase データベースへSQLを発行して投稿を取得するのではなく、
+        <strong>サーバー（Next.js）が 5 分間（300秒）作り置きした HTML 画面を使い回して配信する仕組み（ISR: Incremental Static Regeneration）</strong>
+        を採用しています。
+      </p>
+
+      <div class="highlight-box">
+        <strong>💡 一言で言うと：</strong><br>
+        「誰がアクセスしても同じ『おすすめ＆新着投稿』の画面を、5分間に1回だけまとめて生成して全員に使い回す」仕組みです。
+      </div>
+    </div>
+
+    <!-- Section 2: 以前と現在の比較 -->
+    <div class="card">
+      <h2>2. 修正前の問題点と今回の改善ポイント</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>項目</th>
+            <th>修正前（キャッシュが効かなかった原因）</th>
+            <th>改善後（現在の実装）</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>クライアント種別</strong></td>
+            <td><code>cookies()</code> を読むサーバークライアント（個人のログイン情報を参照）</td>
+            <td><span class="badge badge-success">Public Client</span> Cookie不使用の公開クライアント（<code>lib/supabase/public.ts</code>）</td>
+          </tr>
+          <tr>
+            <td><strong>Next.jsの判定</strong></td>
+            <td>「個人ごとに異なる動的ページ」と判定され、キャッシュが無効化されていた</td>
+            <td><span class="badge badge-info">静的スナップショット</span> 「全ユーザー共通の固定ページ」と判定され ISR が有効化</td>
+          </tr>
+          <tr>
+            <td><strong>DB問い合わせ（SQL）</strong></td>
+            <td>ユーザーがページを開くたびに毎回 SQL が発行されていた</td>
+            <td><span class="badge badge-success">5分に1回だけ</span> サーバーが5分に1回だけ SQL を発行しHTMLを更新</td>
+          </tr>
+          <tr>
+            <td><strong>カードコンポーネント</strong></td>
+            <td><code>PostCard</code> が個別にカテゴリAPIを発行し連打が発生していた</td>
+            <td>親（トップ）からカテゴリ・小カテゴリを一括渡し＋メモリキャッシュ化で通信ゼロへ</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Section 3: アクセス時の処理フロー図解 -->
+    <div class="card">
+      <h2>3. アクセス時の具体的な処理の流れ</h2>
+      <div class="flow-diagram">
+        <div class="flow-step">
+          <div class="step-tag badge-warning">ケース A</div>
+          <div class="step-content">
+            <h4>初回アクセス または 5分経過後のアクセス (Cache MISS)</h4>
+            <p>1. ユーザーがトップページにアクセス<br>
+               2. サーバーが <code>getPublicRepository().getHomePageData()</code> で Supabase から最新の投稿・カテゴリを一括取得<br>
+               3. サーバーが HTML 画面を組み立てて保存し、ユーザーに即座に返却（<code>x-nextjs-cache: MISS</code>）
+            </p>
+          </div>
+        </div>
+
+        <div class="flow-step">
+          <div class="step-tag badge-success">ケース B</div>
+          <div class="step-content">
+            <h4>5分以内の2人目以降のアクセス (Cache HIT)</h4>
+            <p>1. ユーザーがトップページにアクセス<br>
+               2. <strong>Supabase への問い合わせ（SQL）は一切行わない</strong><br>
+               3. サーバーに保存されている作り置きの HTML を超高速（数ミリ秒）で返却（<code>x-nextjs-cache: HIT</code>）
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Section 4: 2層構造のキャッシュ戦略 -->
+    <div class="card">
+      <h2>4. 2層構造のキャッシュ最適化戦略</h2>
+      <p>今回の改善では、サーバー側とブラウザ（クライアント）側の両面でキャッシュを最適化しています。</p>
+
+      <div style="margin-top: 16px;">
+        <h3>① サーバー側 (Next.js ISR)</h3>
+        <div class="code-block">
+export const revalidate = 300; // 300秒（5分）間 HTML を作り置き
+        </div>
+        <p style="font-size: 13px; color: var(--text-sub);">
+          トップページの構成要素（ヒーロー投稿・新着・人気・ランキング・統計・全カテゴリ）を一度のバッチ取得で一括生成します。
+        </p>
+      </div>
+
+      <div style="margin-top: 20px;">
+        <h3>② ブラウザ（クライアント）側 (TanStack Query)</h3>
+        <div class="code-block">
+// hooks.ts
+staleTime: Infinity // カテゴリやタグなどのマスターデータはブラウザ上で永久キャッシュ
+        </div>
+        <p style="font-size: 13px; color: var(--text-sub);">
+          大カテゴリ・小カテゴリ・タグデータはアプリ起動中に一度取れば再取得しません。
+          また、投稿作成や削除を行った際は <code>useInvalidate()</code> により対象キャッシュのみを即座に自動最新化します。
+        </p>
+      </div>
+    </div>
+
+    <!-- Section 5: メリットと注意点 -->
+    <div class="card">
+      <h2>5. この仕組みのメリットと注意点</h2>
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+        <div>
+          <h4 style="color: #065f46; margin-bottom: 8px;">メリット</h4>
+          <ul>
+            <li><strong>超高速な表示速度：</strong> DB問い合わせを挟まないため、ページが瞬時に開きます。</li>
+            <li><strong>Supabase 転送量 (Egress) の節約：</strong> 無料枠上限（5GB）に達するリスクが激減します。</li>
+            <li><strong>サーバー負荷軽減：</strong> 大量のアクセスがあっても DB サーバーがダウンしません。</li>
+          </ul>
+        </div>
+        <div>
+          <h4 style="color: #9a3412; margin-bottom: 8px;">注意点（仕様）</h4>
+          <ul>
+            <li><strong>新着投稿の反映が最大5分遅れる：</strong> 投稿直後はトップにすぐ反映されず、最大5分後の再生成タイミングで表示されます。（※検索画面 <code>/search</code> などはリアルタイムに取得されます）</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <footer>
+      <p>Megliminal Architecture Documentation · 2026</p>
+    </footer>
+  </div>
+</body>
+</html>

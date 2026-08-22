@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { useAuth } from '@/components/providers/AuthProvider';
 import { useTranslations } from '@/components/providers/LocaleProvider';
 import { getRepository } from '@/lib/data';
+import { useInvalidate } from '@/lib/data/hooks';
 
 interface BookmarkButtonProps {
   postId: string;
@@ -16,6 +17,7 @@ interface BookmarkButtonProps {
 export function BookmarkButton({ postId, className }: BookmarkButtonProps) {
   const { t } = useTranslations();
   const { user } = useAuth();
+  const invalidate = useInvalidate();
   const [bookmarked, setBookmarked] = useState(false);
   const [loading, setLoading] = useState(false);
 
@@ -47,6 +49,7 @@ export function BookmarkButton({ postId, className }: BookmarkButtonProps) {
       await repo.addBookmark(user.id, postId);
       setBookmarked(true);
     }
+    invalidate('bookmarks');
     setLoading(false);
   };
 

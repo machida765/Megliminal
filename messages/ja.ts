@@ -10,6 +10,15 @@ export const ja = {
     aboutBody:
       'SNSのアルゴリズムに疲れたあなたへ。純粋な「人のおすすめ」に出会える掲示板です。きれいに並べすぎないのは、意図です。誰かが急いで貼った紙みたいな場所にしたい。',
   },
+  legal: {
+    footerNav: '法務・クレジット',
+    terms: '利用規約',
+    privacy: 'プライバシーポリシー',
+    credits: 'クレジット',
+    termsDescription: 'メグリミナルの利用規約',
+    privacyDescription: 'メグリミナルのプライバシーポリシー',
+    creditsDescription: '本サービスで使用しているオープンソース素材のクレジット',
+  },
   nav: {
     ranking: 'ランキング',
     bookmarks: '保存',
@@ -82,6 +91,7 @@ export const ja = {
     advancedOpen: '詳細条件を設定',
     advancedClose: '詳細条件を閉じる',
     advancedActive: '（設定中）',
+    submit: '検索',
     resultCount: '検索結果：{count} 件',
     tagMatchNote: 'タグは「{mode}」',
     noResults: '条件に合う投稿はありません',
@@ -211,6 +221,9 @@ export const ja = {
       title: 'タグの切れ端',
       note: '横断タグ。大カテゴリには縛られません。',
     },
+    fetchCount: 'データ取得 {count} 回目',
+    fetchCountHint:
+      'リロードしても数字が同じなら、作り置きのHTMLを使っています。増えるたびに Supabase へ取りに行っています。',
   },
   bookmarks: {
     guestTitle: '保存した紙',
@@ -266,7 +279,6 @@ export const ja = {
       google: 'Google でログイン',
       googleSubmitting: 'Google へ移動中...',
       or: 'または',
-      supabaseOnly: 'Google ログインは Supabase 接続時のみ利用できます',
     },
   },
   profile: {
@@ -278,8 +290,9 @@ export const ja = {
       title: '名前の書き換え',
       basicInfo: '基本情報',
       displayName: '表示名',
-      avatar: 'アバター（絵文字）',
-      avatarPlaceholder: '例: 👨‍💻',
+      avatar: 'アバター',
+      avatarPlaceholder: '例: /avatars/042.svg または https://...',
+      avatarHint: '未設定の場合は登録時に自動で /avatars/000〜099 から割り当てられます。',
       saving: '保存中...',
       save: '保存する',
       updated: 'プロフィールを更新しました',
@@ -326,16 +339,6 @@ export const ja = {
       empty: '未対応の通報はありません',
       reportCount: '通報 {count} 件',
       postIdFallback: '（投稿 ID: {id}）',
-    },
-  },
-  dev: {
-    local: {
-      title: 'Local 投稿テスト',
-      hint: '右下からログイン → /create で投稿。データはブラウザに保存されます。',
-      userTaro: 'Taro でログイン',
-      userHanako: 'Hanako でログイン',
-      reset: 'データを初期状態に戻す',
-      resetConfirm: '投稿・ログイン状態を含め、Local データを初期状態に戻しますか？',
     },
   },
 } as const;

@@ -1,11 +1,14 @@
 'use client';
 
+/** プロフィール `/profile/[userId]`。自分のときだけ編集ボタン。 */
 import { use } from 'react';
 import Link from 'next/link';
 import { PostCard } from '@/components/post/PostCard';
 import { Button } from '@/components/ui/button';
+import { LogOut } from 'lucide-react';
 import { useAuth } from '@/components/providers/AuthProvider';
 import { useTranslations } from '@/components/providers/LocaleProvider';
+import { UserAvatar } from '@/components/user/UserAvatar';
 import { usePostsByUser, useUser } from '@/lib/data/hooks';
 
 interface ProfilePageProps {
@@ -16,11 +19,16 @@ export default function ProfilePage({ params }: ProfilePageProps) {
   const { userId } = use(params);
   const { t } = useTranslations();
   const { user, loading: userLoading } = useUser(userId);
-  const { user: currentUser } = useAuth();
+  const { user: currentUser, signOut } = useAuth();
   const { posts, loading: postsLoading } = usePostsByUser(userId, currentUser?.id);
 
   const isSelf = userId === currentUser?.id;
   const loading = userLoading || postsLoading;
+
+  const handleSignOut = async () => {
+    await signOut();
+    window.location.href = '/';
+  };
 
   if (loading) {
     return (
@@ -45,7 +53,12 @@ export default function ProfilePage({ params }: ProfilePageProps) {
     <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
         <div className="flex items-center gap-4">
-          <span className="text-5xl">{user.avatarUrl ?? '👤'}</span>
+          <UserAvatar
+            userId={user.id}
+            name={user.name}
+            avatarUrl={user.avatarUrl}
+            className="w-16 h-16"
+          />
           <div>
             <h1 className="text-2xl sm:text-3xl font-black -rotate-1 inline-block hand-title">
               {user.name}
@@ -56,9 +69,20 @@ export default function ProfilePage({ params }: ProfilePageProps) {
           </div>
         </div>
         {isSelf && (
-          <Button asChild variant="outline">
-            <Link href="/profile/edit">{t('profile.editProfile')}</Link>
-          </Button>
+          <div className="flex flex-wrap gap-2">
+            <Button asChild variant="outline">
+              <Link href="/profile/edit">{t('profile.editProfile')}</Link>
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              className="gap-1.5"
+              onClick={handleSignOut}
+            >
+              <LogOut className="w-4 h-4" />
+              {t('nav.logout')}
+            </Button>
+          </div>
         )}
       </div>
 

@@ -1,5 +1,6 @@
 'use client';
 
+/** ランキング `/ranking`。タブ: 投稿 / ジャンル / ユーザー。UI はこのファイル。 */
 import { useState } from 'react';
 import Link from 'next/link';
 import { Trophy, Heart, Users, Medal } from 'lucide-react';
@@ -18,6 +19,7 @@ import {
   useUserRankings,
 } from '@/lib/data/hooks';
 import { useTranslations } from '@/components/providers/LocaleProvider';
+import { UserAvatar } from '@/components/user/UserAvatar';
 import { type RankingPeriod } from '@/types';
 
 type RankingTab = 'posts' | 'genre' | 'users';
@@ -201,9 +203,12 @@ export default function RankingPage() {
                     >
                       {entry.rank}
                     </span>
-                    <span className="text-2xl flex-shrink-0">
-                      {entry.user.avatarUrl ?? '👤'}
-                    </span>
+                    <UserAvatar
+                      userId={entry.user.id}
+                      name={entry.user.name}
+                      avatarUrl={entry.user.avatarUrl}
+                      className="w-8 h-8 flex-shrink-0"
+                    />
                     <div className="flex-1 min-w-0">
                       <p className="font-bold text-[#3b2a22] truncate">
                         {entry.user.name}

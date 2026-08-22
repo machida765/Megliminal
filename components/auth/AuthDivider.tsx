@@ -1,14 +1,9 @@
 'use client';
 
 import { useTranslations } from '@/components/providers/LocaleProvider';
-import { isSupabaseDataSource } from '@/lib/config/data-source';
 
 export function AuthDivider() {
   const { t } = useTranslations();
-
-  if (!isSupabaseDataSource()) {
-    return null;
-  }
 
   return (
     <div className="relative my-4">

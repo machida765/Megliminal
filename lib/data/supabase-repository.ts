@@ -34,7 +34,7 @@ import type {
 
 function notReady(): never {
   throw new Error(
-    'Supabase データソースは Phase 3 で接続します。画面開発中は NEXT_PUBLIC_DATA_SOURCE=local を使ってください。'
+    'この操作はまだ Supabase に接続していません。'
   );
 }
 
@@ -197,6 +197,10 @@ export class SupabaseDataRepository implements DataRepository {
   }
 
   async getHomePageData(): Promise<HomePageData> {
+    console.log(
+      '🔥 [DB FETCH] getHomePageData: Supabase DBからトップ用データを全件取得中...',
+      new Date().toLocaleTimeString()
+    );
     const [
       categories,
       subCategories,

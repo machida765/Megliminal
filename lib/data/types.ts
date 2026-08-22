@@ -72,6 +72,7 @@ export type HomePageData = {
   tags: Tag[];
 };
 
+/** 画面が使うデータ操作の一覧。実装は supabase-repository。 */
 export interface DataRepository {
   getMajorCategories(): Promise<MajorCategory[]>;
   getSubCategories(): Promise<SubCategory[]>;

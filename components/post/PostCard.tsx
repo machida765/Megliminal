@@ -9,6 +9,7 @@ import { useTranslations } from '@/components/providers/LocaleProvider';
 import { LOCALE_DATE_FORMAT } from '@/lib/i18n/config';
 import { paperTone, tiltClass } from '@/lib/tilt';
 import { cn } from '@/lib/utils';
+import { UserAvatar } from '@/components/user/UserAvatar';
 
 interface PostCardProps {
   post: Post;
@@ -82,7 +83,12 @@ export function PostCard({
         {post.title}
       </h3>
       <div className="flex items-center gap-2 text-sm text-[#8a6a52] mt-2">
-        <span>{post.user.avatarUrl}</span>
+        <UserAvatar
+          userId={post.user.id}
+          name={post.user.name}
+          avatarUrl={post.user.avatarUrl}
+          className="w-6 h-6"
+        />
         <span>{post.user.name}</span>
       </div>
       <p className="text-sm text-[#6a5344] mt-3 mb-4 line-clamp-3 leading-relaxed">

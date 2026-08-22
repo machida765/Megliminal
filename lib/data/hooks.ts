@@ -1,6 +1,8 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+/** 画面用フック。TanStack Query によるキャッシュ管理。 */
+import { useCallback } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { getRepository } from '@/lib/data';
 import type {
   MajorCategory,
@@ -16,326 +18,182 @@ import type {
   UserRankingSort,
 } from '@/types';
 
-let majorCategoriesCache: MajorCategory[] | null = null;
-let majorCategoriesInflight: Promise<MajorCategory[]> | null = null;
-let subCategoriesCache: SubCategory[] | null = null;
-let subCategoriesInflight: Promise<SubCategory[]> | null = null;
-let tagsCache: Tag[] | null = null;
-let tagsInflight: Promise<Tag[]> | null = null;
-
-async function loadMajorCategories(force = false): Promise<MajorCategory[]> {
-  if (!force && majorCategoriesCache) return majorCategoriesCache;
-  if (!force && majorCategoriesInflight) return majorCategoriesInflight;
-  majorCategoriesInflight = getRepository()
-    .getMajorCategories()
-    .then((data) => {
-      majorCategoriesCache = data;
-      return data;
-    })
-    .finally(() => {
-      majorCategoriesInflight = null;
-    });
-  return majorCategoriesInflight;
-}
-
-async function loadSubCategories(force = false): Promise<SubCategory[]> {
-  if (!force && subCategoriesCache) return subCategoriesCache;
-  if (!force && subCategoriesInflight) return subCategoriesInflight;
-  subCategoriesInflight = getRepository()
-    .getSubCategories()
-    .then((data) => {
-      subCategoriesCache = data;
-      return data;
-    })
-    .finally(() => {
-      subCategoriesInflight = null;
-    });
-  return subCategoriesInflight;
-}
-
-async function loadTags(force = false): Promise<Tag[]> {
-  if (!force && tagsCache) return tagsCache;
-  if (!force && tagsInflight) return tagsInflight;
-  tagsInflight = getRepository()
-    .getTags()
-    .then((data) => {
-      tagsCache = data;
-      return data;
-    })
-    .finally(() => {
-      tagsInflight = null;
-    });
-  return tagsInflight;
-}
-
+/** 大ジャンル一覧（マスターデータのため Infinity キャッシュ） */
 export function useMajorCategories(enabled = true) {
-  const [categories, setCategories] = useState<MajorCategory[]>(
-    () => majorCategoriesCache ?? []
-  );
-  const [loading, setLoading] = useState(
-    () => enabled && majorCategoriesCache === null
-  );
+  const { data = [], isLoading, refetch } = useQuery<MajorCategory[]>({
+    queryKey: ['majorCategories'],
+    queryFn: () => getRepository().getMajorCategories(),
+    enabled,
+    staleTime: Infinity,
+  });
 
   const reload = useCallback(async () => {
-    setLoading(true);
-    const data = await loadMajorCategories(true);
-    setCategories(data);
-    setLoading(false);
-  }, []);
+    await refetch();
+  }, [refetch]);
 
-  useEffect(() => {
-    if (!enabled) {
-      setLoading(false);
-      return;
-    }
-    let cancelled = false;
-    setLoading(majorCategoriesCache === null);
-    loadMajorCategories().then((data) => {
-      if (!cancelled) {
-        setCategories(data);
-        setLoading(false);
-      }
-    });
-    return () => {
-      cancelled = true;
-    };
-  }, [enabled]);
-
-  return { categories, loading, reload };
+  return { categories: data, loading: enabled ? isLoading : false, reload };
 }
 
+/** 中・小ジャンル一覧（マスターデータのため Infinity キャッシュ） */
 export function useSubCategories(enabled = true) {
-  const [subCategories, setSubCategories] = useState<SubCategory[]>(
-    () => subCategoriesCache ?? []
-  );
-  const [loading, setLoading] = useState(
-    () => enabled && subCategoriesCache === null
-  );
+  const { data = [], isLoading, refetch } = useQuery<SubCategory[]>({
+    queryKey: ['subCategories'],
+    queryFn: () => getRepository().getSubCategories(),
+    enabled,
+    staleTime: Infinity,
+  });
 
   const reload = useCallback(async () => {
-    setLoading(true);
-    const data = await loadSubCategories(true);
-    setSubCategories(data);
-    setLoading(false);
-  }, []);
+    await refetch();
+  }, [refetch]);
 
-  useEffect(() => {
-    if (!enabled) {
-      setLoading(false);
-      return;
-    }
-    let cancelled = false;
-    setLoading(subCategoriesCache === null);
-    loadSubCategories().then((data) => {
-      if (!cancelled) {
-        setSubCategories(data);
-        setLoading(false);
-      }
-    });
-    return () => {
-      cancelled = true;
-    };
-  }, [enabled]);
-
-  return { subCategories, loading, reload };
+  return { subCategories: data, loading: enabled ? isLoading : false, reload };
 }
 
+/** タグ一覧（マスターデータのため Infinity キャッシュ） */
 export function useTags(enabled = true) {
-  const [tags, setTags] = useState<Tag[]>(() => tagsCache ?? []);
-  const [loading, setLoading] = useState(
-    () => enabled && tagsCache === null
-  );
+  const { data = [], isLoading } = useQuery<Tag[]>({
+    queryKey: ['tags'],
+    queryFn: () => getRepository().getTags(),
+    enabled,
+    staleTime: Infinity,
+  });
 
-  useEffect(() => {
-    if (!enabled) {
-      setLoading(false);
-      return;
-    }
-    let cancelled = false;
-    setLoading(tagsCache === null);
-    loadTags().then((data) => {
-      if (!cancelled) {
-        setTags(data);
-        setLoading(false);
-      }
-    });
-    return () => {
-      cancelled = true;
-    };
-  }, [enabled]);
-
-  return { tags, loading };
+  return { tags: data, loading: enabled ? isLoading : false };
 }
 
+/** 投稿一覧 */
 export function usePosts(viewerUserId?: string | null) {
-  const [posts, setPosts] = useState<Post[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { data = [], isLoading, refetch } = useQuery<Post[]>({
+    queryKey: ['posts', viewerUserId ?? null],
+    queryFn: () => getRepository().getPosts(viewerUserId ?? undefined),
+  });
 
   const reload = useCallback(async () => {
-    setLoading(true);
-    try {
-      const data = await getRepository().getPosts(viewerUserId ?? undefined);
-      setPosts(data);
-    } finally {
-      setLoading(false);
-    }
-  }, [viewerUserId]);
+    await refetch();
+  }, [refetch]);
 
-  useEffect(() => {
-    reload();
-  }, [reload]);
-
-  return { posts, loading, reload };
+  return { posts: data, loading: isLoading, reload };
 }
 
+/** 投稿詳細 */
 export function usePost(id: string, viewerUserId?: string | null) {
-  const [post, setPost] = useState<Post | null>(null);
-  const [loading, setLoading] = useState(true);
+  const { data = null, isLoading, refetch } = useQuery<Post | null>({
+    queryKey: ['post', id, viewerUserId ?? null],
+    queryFn: () => (id ? getRepository().getPost(id, viewerUserId ?? undefined) : Promise.resolve(null)),
+    enabled: Boolean(id),
+  });
 
   const reload = useCallback(async () => {
-    if (!id) return;
-    setLoading(true);
-    try {
-      const data = await getRepository().getPost(id, viewerUserId ?? undefined);
-      setPost(data);
-    } finally {
-      setLoading(false);
-    }
-  }, [id, viewerUserId]);
+    await refetch();
+  }, [refetch]);
 
-  useEffect(() => {
-    reload();
-  }, [reload]);
-
-  return { post, loading, reload };
+  return { post: data, loading: id ? isLoading : false, reload };
 }
 
+/** ユーザー情報 */
 export function useUser(id: string | null | undefined) {
-  const [user, setUser] = useState<User | null>(null);
-  const [loading, setLoading] = useState(Boolean(id));
+  const { data = null, isLoading } = useQuery<User | null>({
+    queryKey: ['user', id ?? null],
+    queryFn: () => (id ? getRepository().getUser(id) : Promise.resolve(null)),
+    enabled: Boolean(id),
+  });
 
-  useEffect(() => {
-    if (!id) {
-      setUser(null);
-      setLoading(false);
-      return;
-    }
-    getRepository()
-      .getUser(id)
-      .then(setUser)
-      .finally(() => setLoading(false));
-  }, [id]);
-
-  return { user, loading };
+  return { user: data, loading: id ? isLoading : false };
 }
 
+/** プロフィール情報 */
 export function useProfile(id: string | null | undefined) {
-  const [profile, setProfile] = useState<Profile | null>(null);
-  const [loading, setLoading] = useState(Boolean(id));
+  const { data = null, isLoading, refetch } = useQuery<Profile | null>({
+    queryKey: ['profile', id ?? null],
+    queryFn: () => (id ? getRepository().getProfile(id) : Promise.resolve(null)),
+    enabled: Boolean(id),
+  });
 
   const reload = useCallback(async () => {
-    if (!id) return;
-    setLoading(true);
-    const data = await getRepository().getProfile(id);
-    setProfile(data);
-    setLoading(false);
-  }, [id]);
+    await refetch();
+  }, [refetch]);
 
-  useEffect(() => {
-    reload();
-  }, [reload]);
-
-  return { profile, loading, reload };
+  return { profile: data, loading: id ? isLoading : false, reload };
 }
 
+/** ユーザー別投稿一覧 */
 export function usePostsByUser(userId: string, viewerUserId?: string | null) {
-  const [posts, setPosts] = useState<Post[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { data = [], isLoading } = useQuery<Post[]>({
+    queryKey: ['postsByUser', userId, viewerUserId ?? null],
+    queryFn: () => (userId ? getRepository().getPostsByUser(userId, viewerUserId ?? undefined) : Promise.resolve([])),
+    enabled: Boolean(userId),
+  });
 
-  useEffect(() => {
-    if (!userId) return;
-    getRepository()
-      .getPostsByUser(userId, viewerUserId ?? undefined)
-      .then(setPosts)
-      .finally(() => setLoading(false));
-  }, [userId, viewerUserId]);
-
-  return { posts, loading };
+  return { posts: data, loading: userId ? isLoading : false };
 }
 
+/** ブックマーク投稿一覧 */
 export function useBookmarks(userId: string | null | undefined) {
-  const [posts, setPosts] = useState<Post[]>([]);
-  const [loading, setLoading] = useState(Boolean(userId));
+  const { data = [], isLoading, refetch } = useQuery<Post[]>({
+    queryKey: ['bookmarks', userId ?? null],
+    queryFn: () => (userId ? getRepository().getBookmarks(userId) : Promise.resolve([])),
+    enabled: Boolean(userId),
+  });
 
   const reload = useCallback(async () => {
-    if (!userId) {
-      setPosts([]);
-      setLoading(false);
-      return;
-    }
-    setLoading(true);
-    const data = await getRepository().getBookmarks(userId);
-    setPosts(data);
-    setLoading(false);
-  }, [userId]);
+    await refetch();
+  }, [refetch]);
 
-  useEffect(() => {
-    reload();
-  }, [reload]);
-
-  return { posts, loading, reload };
+  return { posts: data, loading: userId ? isLoading : false, reload };
 }
 
+/** 投稿ランキング */
 export function usePostRankings(
   period: RankingPeriod,
   categoryId?: string
 ) {
-  const [entries, setEntries] = useState<PostRankingEntry[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { data = [], isLoading } = useQuery<PostRankingEntry[]>({
+    queryKey: ['postRankings', period, categoryId ?? null],
+    queryFn: () => getRepository().getPostRankings({ period, categoryId }),
+  });
 
-  useEffect(() => {
-    setLoading(true);
-    getRepository()
-      .getPostRankings({ period, categoryId })
-      .then(setEntries)
-      .finally(() => setLoading(false));
-  }, [period, categoryId]);
-
-  return { entries, loading };
+  return { entries: data, loading: isLoading };
 }
 
+/** ユーザーランキング */
 export function useUserRankings(
   period: RankingPeriod,
   sortBy: UserRankingSort
 ) {
-  const [entries, setEntries] = useState<UserRankingEntry[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { data = [], isLoading } = useQuery<UserRankingEntry[]>({
+    queryKey: ['userRankings', period, sortBy],
+    queryFn: () => getRepository().getUserRankings({ period, sortBy }),
+  });
 
-  useEffect(() => {
-    setLoading(true);
-    getRepository()
-      .getUserRankings({ period, sortBy })
-      .then(setEntries)
-      .finally(() => setLoading(false));
-  }, [period, sortBy]);
-
-  return { entries, loading };
+  return { entries: data, loading: isLoading };
 }
 
+/** 通報一覧 */
 export function useReports(status?: Report['status']) {
-  const [reports, setReports] = useState<Report[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { data = [], isLoading, refetch } = useQuery<Report[]>({
+    queryKey: ['reports', status ?? 'all'],
+    queryFn: () => getRepository().getReports(status),
+  });
 
   const reload = useCallback(async () => {
-    setLoading(true);
-    const data = await getRepository().getReports(status);
-    setReports(data);
-    setLoading(false);
-  }, [status]);
+    await refetch();
+  }, [refetch]);
 
-  useEffect(() => {
-    reload();
-  }, [reload]);
+  return { reports: data, loading: isLoading, reload };
+}
 
-  return { reports, loading, reload };
+/** キャッシュ無効化（データ更新後に呼ぶ）用のカスタムフック */
+export function useInvalidate() {
+  const queryClient = useQueryClient();
+
+  return useCallback(
+    (...queryKeys: (string | unknown[])[]) => {
+      queryKeys.forEach((key) => {
+        const queryKey = typeof key === 'string' ? [key] : key;
+        queryClient.invalidateQueries({ queryKey });
+      });
+    },
+    [queryClient]
+  );
 }

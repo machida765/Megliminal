@@ -1,5 +1,6 @@
 'use client';
 
+/** トップの見た目。props は HomePageData。 */
 import { useMemo, useState, useEffect, FormEvent } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
@@ -18,8 +19,12 @@ import {
 } from 'lucide-react';
 import type { HomePageData } from '@/lib/data/types';
 import { useTranslations } from '@/components/providers/LocaleProvider';
+import { UserAvatar } from '@/components/user/UserAvatar';
 
-type HomePageClientProps = HomePageData;
+type HomePageClientProps = HomePageData & {
+  /** サーバー（または Local）がトップ用データを取った回数 */
+  fetchCount?: number;
+};
 
 function pickRandomHero(candidates: Post[], fallback: Post | null): Post | null {
   if (candidates.length > 0) {
@@ -37,6 +42,7 @@ export function HomePageClient({
   categories,
   subCategories,
   tags,
+  fetchCount,
 }: HomePageClientProps) {
   const router = useRouter();
   const { t, messages } = useTranslations();
@@ -65,6 +71,14 @@ export function HomePageClient({
 
   return (
     <div className="max-w-6xl mx-auto px-3 sm:px-6 py-8">
+      {fetchCount != null && fetchCount > 0 && (
+        <p
+          className="mb-4 inline-block paper-note bg-[#dbeafe] px-3 py-1.5 text-xs font-black text-[#1e40af] rotate-1"
+          title={t('home.fetchCountHint')}
+        >
+          {t('home.fetchCount', { count: fetchCount })}
+        </p>
+      )}
       <div className="cork-frame p-4 sm:p-7 mb-8">
         <div className="flex flex-col lg:flex-row gap-4 lg:items-start">
           {heroPost && (
@@ -87,8 +101,14 @@ export function HomePageClient({
                     <ArrowRight className="w-4 h-4" />
                   </Link>
                 </Button>
-                <span className="text-sm text-[#8a6a52]">
-                  {heroPost.user.avatarUrl} {heroPost.user.name}
+                <span className="text-sm text-[#8a6a52] flex items-center gap-2">
+                  <UserAvatar
+                    userId={heroPost.user.id}
+                    name={heroPost.user.name}
+                    avatarUrl={heroPost.user.avatarUrl}
+                    className="w-6 h-6"
+                  />
+                  {heroPost.user.name}
                 </span>
               </div>
             </div>

@@ -5,7 +5,6 @@ import { useSearchParams } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/components/providers/AuthProvider';
 import { useTranslations } from '@/components/providers/LocaleProvider';
-import { isSupabaseDataSource } from '@/lib/config/data-source';
 
 type GoogleSignInButtonProps = {
   onError?: (message: string) => void;
@@ -16,10 +15,6 @@ export function GoogleSignInButton({ onError }: GoogleSignInButtonProps) {
   const searchParams = useSearchParams();
   const { signInWithGoogle } = useAuth();
   const [loading, setLoading] = useState(false);
-
-  if (!isSupabaseDataSource()) {
-    return null;
-  }
 
   const handleClick = async () => {
     setLoading(true);

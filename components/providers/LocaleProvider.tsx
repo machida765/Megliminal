@@ -1,5 +1,6 @@
 'use client';
 
+/** 言語。画面の文言は useTranslations() の t('キー')。正本は messages/ja.ts。 */
 import { createContext, useContext, useMemo } from 'react';
 import { DEFAULT_LOCALE } from '@/lib/i18n/config';
 import { createTranslator, type TranslateFn } from '@/lib/i18n/translate';

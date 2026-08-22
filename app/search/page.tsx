@@ -1,6 +1,11 @@
 'use client';
 
-import { Suspense, useState, useMemo, useEffect } from 'react';
+/**
+ * 検索 `/search`
+ * 投稿を一括取得し、条件は lib/search.ts でブラウザ側フィルタ。
+ * 絞り込みは検索ボタン（または Enter）で確定。Suspense は useSearchParams（?q=）用。
+ */
+import { Suspense, useState, useMemo, useEffect, type FormEvent } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -27,7 +32,7 @@ import {
 import { type Tag } from '@/types';
 import { getMessages } from '@/messages';
 import { DEFAULT_LOCALE } from '@/lib/i18n/config';
-import { Minus, Plus, X } from 'lucide-react';
+import { Minus, Plus, Search, X } from 'lucide-react';
 
 function hasAdvancedFilters(filters: SearchFilters): boolean {
   return (
@@ -64,44 +69,51 @@ function SearchPageInner() {
   const { subCategories } = useSubCategories();
   const { tags } = useTags();
   const { posts, loading } = usePosts(user?.id);
-  const [filters, setFilters] = useState<SearchFilters>(defaultSearchFilters);
+  const [draft, setDraft] = useState<SearchFilters>(defaultSearchFilters);
+  const [applied, setApplied] = useState<SearchFilters>(defaultSearchFilters);
   const [expanded, setExpanded] = useState(false);
 
   useEffect(() => {
     const q = searchParams.get('q');
     if (q) {
-      setFilters((prev) => ({ ...prev, query: q }));
+      setDraft((prev) => ({ ...prev, query: q }));
+      setApplied((prev) => ({ ...prev, query: q }));
       setExpanded(true);
     }
   }, [searchParams]);
 
   const filteredPosts = useMemo(
-    () => filterAndSortPosts(posts, filters),
-    [posts, filters]
+    () => filterAndSortPosts(posts, applied),
+    [posts, applied]
   );
 
-  const activeCategory = categories.find((c) => c.id === filters.categoryId);
-  const activeSubCategory = subCategories.find((c) => c.id === filters.subCategoryId);
-  const activeTags = tags.filter((t) => filters.tagIds.includes(t.id));
+  const activeCategory = categories.find((c) => c.id === applied.categoryId);
+  const activeSubCategory = subCategories.find((c) => c.id === applied.subCategoryId);
+  const activeTags = tags.filter((tag) => applied.tagIds.includes(tag.id));
   const hasExtraFilters =
-    Boolean(filters.categoryId) ||
-    Boolean(filters.subCategoryId) ||
-    filters.tagIds.length > 0 ||
-    filters.period !== 'all' ||
-    Boolean(filters.dateFrom) ||
-    Boolean(filters.dateTo);
+    Boolean(applied.categoryId) ||
+    Boolean(applied.subCategoryId) ||
+    applied.tagIds.length > 0 ||
+    applied.period !== 'all' ||
+    Boolean(applied.dateFrom) ||
+    Boolean(applied.dateTo);
 
   const customDateLabel = useMemo(
-    () => formatSearchDateRangeLabel(filters.dateFrom, filters.dateTo, t),
-    [filters.dateFrom, filters.dateTo, t]
+    () => formatSearchDateRangeLabel(applied.dateFrom, applied.dateTo, t),
+    [applied.dateFrom, applied.dateTo, t]
   );
 
-  const patch = (partial: Partial<SearchFilters>) => {
-    setFilters((prev) => ({ ...prev, ...partial }));
+  const patchDraft = (partial: Partial<SearchFilters>) => {
+    setDraft((prev) => ({ ...prev, ...partial }));
   };
 
-  const toggleTag = (tagId: string) => {
-    setFilters((prev) => ({
+  const patchApplied = (partial: Partial<SearchFilters>) => {
+    setDraft((prev) => ({ ...prev, ...partial }));
+    setApplied((prev) => ({ ...prev, ...partial }));
+  };
+
+  const toggleDraftTag = (tagId: string) => {
+    setDraft((prev) => ({
       ...prev,
       tagIds: prev.tagIds.includes(tagId)
         ? prev.tagIds.filter((id) => id !== tagId)
@@ -109,12 +121,19 @@ function SearchPageInner() {
     }));
   };
 
+  const runSearch = (e?: FormEvent) => {
+    e?.preventDefault();
+    setApplied(draft);
+  };
+
   const resetFilters = () => {
-    setFilters((prev) => ({
+    const next = {
       ...defaultSearchFilters(),
-      query: prev.query,
-      sort: prev.sort,
-    }));
+      query: applied.query,
+      sort: applied.sort,
+    };
+    setDraft(next);
+    setApplied(next);
   };
 
   const toggleExpanded = () => setExpanded((open) => !open);
@@ -126,24 +145,24 @@ function SearchPageInner() {
         <p className="text-sm text-[#6a5344]">{t('search.description')}</p>
       </header>
 
-      <div className="func-surface p-4 mb-4 space-y-4">
+      <form onSubmit={runSearch} className="func-surface p-4 mb-4 space-y-4">
         <CategoryPicker
           majorCategories={categories}
           subCategories={subCategories}
-          majorCategoryId={filters.categoryId}
-          subCategoryId={filters.subCategoryId}
+          majorCategoryId={draft.categoryId}
+          subCategoryId={draft.subCategoryId}
           onMajorChange={(categoryId) =>
-            patch({
+            patchDraft({
               categoryId,
               subCategoryId:
-                filters.subCategoryId &&
-                subCategories.find((sub) => sub.id === filters.subCategoryId)
+                draft.subCategoryId &&
+                subCategories.find((sub) => sub.id === draft.subCategoryId)
                   ?.majorCategoryId === categoryId
-                  ? filters.subCategoryId
+                  ? draft.subCategoryId
                   : null,
             })
           }
-          onSubChange={(subCategoryId) => patch({ subCategoryId })}
+          onSubChange={(subCategoryId) => patchDraft({ subCategoryId })}
         />
 
         <button
@@ -160,7 +179,7 @@ function SearchPageInner() {
             <>
               <Plus className="w-4 h-4" />
               {t('search.advancedOpen')}
-              {hasAdvancedFilters(filters) && (
+              {hasAdvancedFilters(draft) && (
                 <span className="text-xs font-normal text-[#8a6a52]">
                   {t('search.advancedActive')}
                 </span>
@@ -176,46 +195,53 @@ function SearchPageInner() {
               <Input
                 type="text"
                 placeholder={t('search.keywordPlaceholder')}
-                value={filters.query}
-                onChange={(e) => patch({ query: e.target.value })}
+                value={draft.query}
+                onChange={(e) => patchDraft({ query: e.target.value })}
                 className="bg-white"
               />
             </div>
 
             <TagPicker
               tags={tags}
-              selectedIds={filters.tagIds}
-              onToggle={toggleTag}
-              match={filters.tagMatch}
-              onMatchChange={(tagMatch) => patch({ tagMatch })}
+              selectedIds={draft.tagIds}
+              onToggle={toggleDraftTag}
+              match={draft.tagMatch}
+              onMatchChange={(tagMatch) => patchDraft({ tagMatch })}
               labels={messages.search}
             />
 
             <div>
               <p className="text-xs font-bold text-[#8a6a52] mb-2">{t('search.postedAt')}</p>
               <SearchPeriodFilter
-                period={filters.period}
-                dateFrom={filters.dateFrom}
-                dateTo={filters.dateTo}
-                onPeriodChange={(period) => patch({ period })}
-                onDateFromChange={(dateFrom) => patch({ dateFrom })}
-                onDateToChange={(dateTo) => patch({ dateTo })}
+                period={draft.period}
+                dateFrom={draft.dateFrom}
+                dateTo={draft.dateTo}
+                onPeriodChange={(period) => patchDraft({ period })}
+                onDateFromChange={(dateFrom) => patchDraft({ dateFrom })}
+                onDateToChange={(dateTo) => patchDraft({ dateTo })}
               />
             </div>
           </div>
         )}
-      </div>
+
+        <div className="flex justify-end">
+          <Button type="submit" variant="flat" className="gap-2 min-w-32">
+            <Search className="w-4 h-4" />
+            {t('search.submit')}
+          </Button>
+        </div>
+      </form>
 
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-4">
         <p className="text-sm text-[#6a5344] tabular">
           {loading
             ? '...'
             : t('search.resultCount', { count: filteredPosts.length })}
-          {filters.tagIds.length > 1 && (
+          {applied.tagIds.length > 1 && (
             <span className="ml-2 text-xs">
               {t('search.tagMatchNote', {
                 mode:
-                  filters.tagMatch === 'and'
+                  applied.tagMatch === 'and'
                     ? messages.search.tagMatch.and
                     : messages.search.tagMatch.or,
               })}
@@ -225,8 +251,8 @@ function SearchPageInner() {
         <div className="flex items-center gap-2">
           <span className="text-xs font-bold text-[#8a6a52] shrink-0">{t('common.sort')}</span>
           <Select
-            value={filters.sort}
-            onValueChange={(v) => patch({ sort: (v ?? 'newest') as SearchSort })}
+            value={applied.sort}
+            onValueChange={(v) => patchApplied({ sort: (v ?? 'newest') as SearchSort })}
           >
             <SelectTrigger className="w-full sm:w-48 bg-white border-[#e4d2b8]">
               <SelectValue />
@@ -242,24 +268,24 @@ function SearchPageInner() {
         </div>
       </div>
 
-      {(hasExtraFilters || filters.query || filters.sort !== 'newest') && (
+      {(hasExtraFilters || applied.query || applied.sort !== 'newest') && (
         <div className="flex flex-wrap items-center gap-2 mb-4">
-          {filters.query && (
+          {applied.query && (
             <FilterChip
-              label={`「${filters.query}」`}
-              onRemove={() => patch({ query: '' })}
+              label={`「${applied.query}」`}
+              onRemove={() => patchApplied({ query: '' })}
             />
           )}
           {activeSubCategory ? (
             <FilterChip
               label={activeSubCategory.name}
-              onRemove={() => patch({ subCategoryId: null })}
+              onRemove={() => patchApplied({ subCategoryId: null })}
             />
           ) : (
             activeCategory && (
               <FilterChip
                 label={activeCategory.name}
-                onRemove={() => patch({ categoryId: null, subCategoryId: null })}
+                onRemove={() => patchApplied({ categoryId: null, subCategoryId: null })}
               />
             )
           )}
@@ -267,25 +293,29 @@ function SearchPageInner() {
             <FilterChip
               key={tag.id}
               label={`#${tag.name}`}
-              onRemove={() => toggleTag(tag.id)}
+              onRemove={() =>
+                patchApplied({
+                  tagIds: applied.tagIds.filter((id) => id !== tag.id),
+                })
+              }
             />
           ))}
           {customDateLabel ? (
             <FilterChip
               label={customDateLabel}
-              onRemove={() => patch({ dateFrom: null, dateTo: null })}
+              onRemove={() => patchApplied({ dateFrom: null, dateTo: null })}
             />
           ) : (
-            filters.period !== 'all' && (
+            applied.period !== 'all' && (
               <FilterChip
-                label={messages.ranking.period[filters.period]}
-                onRemove={() => patch({ period: 'all' })}
+                label={messages.ranking.period[applied.period]}
+                onRemove={() => patchApplied({ period: 'all' })}
               />
             )
           )}
-          {filters.sort !== 'newest' && (
+          {applied.sort !== 'newest' && (
             <span className="text-xs text-[#8a6a52]">
-              {messages.search.sort[filters.sort]}
+              {messages.search.sort[applied.sort]}
             </span>
           )}
           {hasExtraFilters && (
@@ -300,7 +330,7 @@ function SearchPageInner() {
         </div>
       )}
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+      <div className="grid grid-cols-2 gap-3 sm:gap-4">
         {!loading && filteredPosts.length > 0 ? (
           filteredPosts.map((post) => (
             <PostCard

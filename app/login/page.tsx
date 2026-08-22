@@ -1,5 +1,6 @@
 'use client';
 
+/** ログイン `/login`。本体は LoginForm。 */
 import { LoginForm } from '@/components/auth/LoginForm';
 import { useTranslations } from '@/components/providers/LocaleProvider';
 

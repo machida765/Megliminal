@@ -1,5 +1,6 @@
 'use client';
 
+/** 投稿編集 `/post/[id]/edit`。本人以外は編集不可。本体は PostForm。 */
 import { use } from 'react';
 import Link from 'next/link';
 import { PostForm } from '@/components/post/PostForm';

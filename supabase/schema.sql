@@ -26,7 +26,11 @@ returns trigger
 language plpgsql
 security definer set search_path = ''
 as $$
+declare
+  avatar_index int;
 begin
+  avatar_index := abs(hashtext(new.id::text)) % 100;
+
   insert into public.profiles (id, name, avatar_url, role)
   values (
     new.id,
@@ -36,9 +40,9 @@ begin
       split_part(new.email, '@', 1)
     ),
     coalesce(
-      new.raw_user_meta_data->>'avatar_url',
-      new.raw_user_meta_data->>'picture',
-      '👤'
+      nullif(new.raw_user_meta_data->>'avatar_url', ''),
+      nullif(new.raw_user_meta_data->>'picture', ''),
+      '/avatars/' || lpad(avatar_index::text, 3, '0') || '.svg'
     ),
     'user'
   );

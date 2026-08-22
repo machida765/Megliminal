@@ -7,7 +7,7 @@ import Link from 'next/link';
 import { BookmarkButton } from '@/components/post/BookmarkButton';
 import { PostModerationActions } from '@/components/moderation/PostModerationActions';
 import { useTranslations } from '@/components/providers/LocaleProvider';
-import { LOCALE_DATE_FORMAT } from '@/lib/i18n/config';
+import { UserAvatar } from '@/components/user/UserAvatar';
 
 interface PostDetailProps {
   post: Post;
@@ -66,7 +66,12 @@ export function PostDetail({
         </span>
         <h1 className="text-2xl sm:text-4xl font-black mb-4 hand-title">{post.title}</h1>
         <div className="flex items-center gap-3 pb-4 border-b border-dashed border-[#e8c9a4] mb-6">
-          <span className="text-2xl">{post.user.avatarUrl}</span>
+          <UserAvatar
+            userId={post.user.id}
+            name={post.user.name}
+            avatarUrl={post.user.avatarUrl}
+            className="w-10 h-10"
+          />
           <div>
             <Link
               href={`/profile/${post.userId}`}

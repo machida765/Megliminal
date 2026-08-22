@@ -1,5 +1,6 @@
 'use client';
 
+/** 投稿詳細 `/post/[id]`。本体は PostDetail。 */
 import { use } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';

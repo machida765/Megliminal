@@ -11,7 +11,7 @@ import { CategoryPicker } from '@/components/search/CategoryPicker';
 import { getRepository } from '@/lib/data';
 import { useAuth } from '@/components/providers/AuthProvider';
 import { useTranslations } from '@/components/providers/LocaleProvider';
-import { useMajorCategories, useSubCategories } from '@/lib/data/hooks';
+import { useInvalidate, useMajorCategories, useSubCategories } from '@/lib/data/hooks';
 
 interface PostFormProps {
   initialPost?: Post;
@@ -22,6 +22,7 @@ export function PostForm({ initialPost, onSubmit }: PostFormProps) {
   const router = useRouter();
   const { t } = useTranslations();
   const { user } = useAuth();
+  const invalidate = useInvalidate();
   const { categories } = useMajorCategories();
   const { subCategories } = useSubCategories();
   const isEdit = Boolean(initialPost);
@@ -82,6 +83,7 @@ export function PostForm({ initialPost, onSubmit }: PostFormProps) {
           description: formData.description,
           url: formData.url || undefined,
         });
+        invalidate('posts', 'post', 'postsByUser', 'postRankings');
         onSubmit?.(updated);
         alert(t('post.updated'));
         router.push(`/post/${updated.id}`);
@@ -94,6 +96,7 @@ export function PostForm({ initialPost, onSubmit }: PostFormProps) {
           description: formData.description,
           url: formData.url || undefined,
         });
+        invalidate('posts', 'post', 'postsByUser', 'postRankings');
         onSubmit?.(newPost);
         alert(t('post.published'));
         router.push('/');

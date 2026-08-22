@@ -14,6 +14,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { useAuth } from '@/components/providers/AuthProvider';
 import { useTranslations } from '@/components/providers/LocaleProvider';
 import { getRepository } from '@/lib/data';
+import { useInvalidate } from '@/lib/data/hooks';
 import { type ReportReason } from '@/types';
 
 interface PostModerationActionsProps {
@@ -27,6 +28,7 @@ export function PostModerationActions({
 }: PostModerationActionsProps) {
   const { t, messages } = useTranslations();
   const { user } = useAuth();
+  const invalidate = useInvalidate();
   const [showReport, setShowReport] = useState(false);
   const [reason, setReason] = useState<ReportReason>('inappropriate');
   const [detail, setDetail] = useState('');
@@ -51,6 +53,7 @@ export function PostModerationActions({
       return;
     }
     await getRepository().hidePost(user.id, postId);
+    invalidate('posts', 'post');
     onHidden?.();
   };
 

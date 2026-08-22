@@ -1,5 +1,6 @@
 'use client';
 
+/** 管理 `/admin`。カテゴリ操作はこのファイル。通報タブは AdminModeration。 */
 import { useEffect, useState } from 'react';
 import { getRepository } from '@/lib/data';
 import { MajorCategory } from '@/types';

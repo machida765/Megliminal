@@ -1,5 +1,6 @@
 'use client';
 
+/** 新規登録 `/signup`。本体は SignupForm。 */
 import { SignupForm } from '@/components/auth/SignupForm';
 import { useTranslations } from '@/components/providers/LocaleProvider';
 

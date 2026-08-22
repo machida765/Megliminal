@@ -3,18 +3,16 @@
 import { getDataSourceKind, getDataSourceLabel } from '@/lib/config/data-source';
 
 const STYLES = {
-  local: 'bg-[#d1fae5] text-[#065f46]',
   docker: 'bg-[#dbeafe] text-[#1e40af]',
   cloud: 'bg-[#ffedd5] text-[#9a3412]',
 } as const;
 
 const TITLES = {
-  local: 'ブラウザ内のデータ（Supabase 未使用）',
   docker: 'PC 上の Docker / ローカル Supabase',
   cloud: 'ネット上の Supabase（クラウド）',
 } as const;
 
-/** 開発中: 現在のデータソースを表示 */
+/** 開発中: Docker か Cloud かを表示 */
 export function DataSourceBadge() {
   const kind = getDataSourceKind();
   const label = getDataSourceLabel();

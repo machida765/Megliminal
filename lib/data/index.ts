@@ -1,12 +1,9 @@
-import { getDataSource } from '@/lib/config/data-source';
-import { localDataRepository } from '@/lib/data/local-repository';
+/** クライアント用データ入口。 */
 import { supabaseDataRepository } from '@/lib/data/supabase-repository';
 import type { DataRepository } from '@/lib/data/types';
 
 export function getRepository(): DataRepository {
-  return getDataSource() === 'supabase'
-    ? supabaseDataRepository
-    : localDataRepository;
+  return supabaseDataRepository;
 }
 
 export type {
@@ -15,4 +12,3 @@ export type {
   UpdatePostInput,
   HomePageData,
 } from '@/lib/data/types';
-export { localStore } from '@/lib/data/local-store';

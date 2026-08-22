@@ -1,5 +1,6 @@
 'use client';
 
+/** ブックマーク `/bookmarks`。未ログインはログイン誘導。 */
 import Link from 'next/link';
 import { Bookmark } from 'lucide-react';
 import { PostCard } from '@/components/post/PostCard';

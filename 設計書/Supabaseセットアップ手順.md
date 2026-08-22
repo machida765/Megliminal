@@ -2,7 +2,7 @@
 
 > **注意:** DB スキーマ（`okini/supabase/schema.sql`）は **ドラフト** です。  
 > 全画面が完成してから最終確定し、SQL を実行してください。  
-> それまでは `NEXT_PUBLIC_DATA_SOURCE=local` で開発を進められます。
+> **注意:** DB スキーマは画面完成後に最終確定して実行してください。データは Docker またはクラウドの Supabase です。
 
 メグリミナルの Supabase 連携では **認証（ログイン/登録）** と **データベース** を使います。
 データソースの切り替え方法は [`データソース切り替え.md`](./データソース切り替え.md) を参照してください。
@@ -128,7 +128,7 @@ Supabase ダッシュボード **Authentication** → **Users** にユーザー�
 
 ## Step 6: Google ログイン（OAuth）
 
-アプリ側は `/login`・`/signup` に **Google でログイン** ボタンを表示します（`NEXT_PUBLIC_DATA_SOURCE=supabase` のときのみ）。
+アプリ側は `/login`・`/signup` に **Google でログイン** ボタンを表示します。
 
 ### 6-1. Google Cloud Console
 
@@ -193,7 +193,7 @@ $$;
 
 ### 6-4. 動作確認
 
-1. `.env.local` で `NEXT_PUBLIC_DATA_SOURCE=supabase`
+1. `.env.local` にプロジェクトの URL と anon key を入れる
 2. `npm run dev` を再起動
 3. `/login` → **Google でログイン**
 4. Google アカウント選択 → アプリに戻る → ナビに名前が表示されれば OK

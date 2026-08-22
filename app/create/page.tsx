@@ -1,5 +1,6 @@
 'use client';
 
+/** 新規投稿 `/create`。フォーム本体は PostForm（initialPost なし）。 */
 import { PostForm } from '@/components/post/PostForm';
 import { useTranslations } from '@/components/providers/LocaleProvider';
 import { useMajorCategories } from '@/lib/data/hooks';
