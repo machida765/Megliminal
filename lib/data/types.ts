@@ -33,7 +33,7 @@ export type UpdatePostInput = {
   tagIds?: string[];
   title?: string;
   description?: string;
-  url?: string;
+  url?: string | null;
 };
 
 export type CreateUserInput = {

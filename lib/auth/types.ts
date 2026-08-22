@@ -22,5 +22,8 @@ export type SignUpResult = {
   needsEmailConfirmation?: boolean;
 };
 
-/** OAuth 開始（成功時はブラウザがプロバイダへリダイレクト） */
 export type OAuthSignInResult = SignInResult;
+
+export type PasswordResetRequestResult = SignInResult;
+
+export type PasswordUpdateResult = SignInResult;

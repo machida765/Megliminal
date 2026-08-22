@@ -1,12 +1,22 @@
 import { createServerClient } from '@supabase/ssr';
 import { NextResponse, type NextRequest } from 'next/server';
+import { isAdminRole } from '@/lib/auth/roles';
+import { getSupabasePublicEnv } from '@/lib/supabase/env';
+
+function redirectToLogin(request: NextRequest, pathname: string) {
+  const url = request.nextUrl.clone();
+  url.pathname = '/login';
+  url.searchParams.set('redirect', pathname);
+  return NextResponse.redirect(url);
+}
 
 export async function updateSession(request: NextRequest) {
   let supabaseResponse = NextResponse.next({ request });
+  const { url, anonKey } = getSupabasePublicEnv();
 
   const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    url,
+    anonKey,
     {
       cookies: {
         getAll() {
@@ -31,16 +41,28 @@ export async function updateSession(request: NextRequest) {
 
   const pathname = request.nextUrl.pathname;
 
-  // 未ログインで保護ページにアクセス → ログインへ
-  const protectedPaths = ['/create', '/profile/edit'];
-  const isProtected = protectedPaths.some((p) => pathname.startsWith(p));
+  const loginRequiredPaths = ['/create', '/profile/edit', '/bookmarks', '/reset-password'];
+  const isLoginRequired = loginRequiredPaths.some((p) => pathname.startsWith(p));
   const isEditPost = /^\/post\/[^/]+\/edit/.test(pathname);
+  const isAdminPath = pathname.startsWith('/admin');
 
-  if (!user && (isProtected || isEditPost)) {
-    const url = request.nextUrl.clone();
-    url.pathname = '/login';
-    url.searchParams.set('redirect', pathname);
-    return NextResponse.redirect(url);
+  if (!user && (isLoginRequired || isEditPost || isAdminPath)) {
+    return redirectToLogin(request, pathname);
+  }
+
+  if (isAdminPath && user) {
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('role')
+      .eq('id', user.id)
+      .single();
+
+    if (!isAdminRole(profile?.role)) {
+      const url = request.nextUrl.clone();
+      url.pathname = '/';
+      url.searchParams.set('error', 'forbidden');
+      return NextResponse.redirect(url);
+    }
   }
 
   return supabaseResponse;

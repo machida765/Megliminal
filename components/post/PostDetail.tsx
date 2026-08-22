@@ -1,13 +1,18 @@
 'use client';
 
+import { useState } from 'react';
 import { Post, MajorCategory, SubCategory } from '@/types';
 import { Button } from '@/components/ui/button';
-import { ExternalLink, ArrowLeft, Heart } from 'lucide-react';
+import { ExternalLink, ArrowLeft, Heart, Trash2 } from 'lucide-react';
 import Link from 'next/link';
 import { BookmarkButton } from '@/components/post/BookmarkButton';
 import { PostModerationActions } from '@/components/moderation/PostModerationActions';
 import { useTranslations } from '@/components/providers/LocaleProvider';
 import { UserAvatar } from '@/components/user/UserAvatar';
+import { LOCALE_DATE_FORMAT } from '@/lib/i18n/config';
+import { getRepository } from '@/lib/data';
+import { useInvalidate } from '@/lib/data/hooks';
+import { getSafeHttpUrl } from '@/lib/validation/data';
 
 interface PostDetailProps {
   post: Post;
@@ -15,6 +20,7 @@ interface PostDetailProps {
   subCategory?: SubCategory;
   isOwner?: boolean;
   onHidden?: () => void;
+  onDeleted?: () => void;
 }
 
 export function PostDetail({
@@ -23,8 +29,12 @@ export function PostDetail({
   subCategory,
   isOwner = false,
   onHidden,
+  onDeleted,
 }: PostDetailProps) {
   const { t, locale } = useTranslations();
+  const invalidate = useInvalidate();
+  const safePostUrl = getSafeHttpUrl(post.url);
+  const [deleting, setDeleting] = useState(false);
   const otherLabel = t('category.other');
   const categoryLabel = subCategory
     ? `${category?.name ?? otherLabel} › ${subCategory.name}`
@@ -39,6 +49,20 @@ export function PostDetail({
     }
   );
 
+  const handleDelete = async () => {
+    if (!confirm(t('post.deleteConfirm'))) return;
+
+    setDeleting(true);
+    try {
+      await getRepository().deletePost(post.id);
+      invalidate('posts', 'post', 'postsByUser', 'postRankings');
+      onDeleted?.();
+    } catch {
+      alert(t('post.deleteFailed'));
+      setDeleting(false);
+    }
+  };
+
   return (
     <>
       <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
@@ -51,11 +75,24 @@ export function PostDetail({
         <div className="flex flex-wrap items-center gap-2">
           <BookmarkButton postId={post.id} />
           {isOwner && (
-            <Link href={`/post/${post.id}/edit`}>
-              <Button variant="outline" size="sm" className="rotate-1">
-                {t('post.edit')}
+            <>
+              <Link href={`/post/${post.id}/edit`}>
+                <Button variant="outline" size="sm" className="rotate-1">
+                  {t('post.edit')}
+                </Button>
+              </Link>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="gap-1.5 text-red-700 border-red-200 hover:bg-red-50 -rotate-1"
+                disabled={deleting}
+                onClick={handleDelete}
+              >
+                <Trash2 className="w-4 h-4" />
+                {deleting ? t('post.deleting') : t('post.delete')}
               </Button>
-            </Link>
+            </>
           )}
         </div>
       </div>
@@ -90,9 +127,9 @@ export function PostDetail({
           <Heart className="w-5 h-5 fill-[#ef7d3b] text-[#ef7d3b]" />
           {t('post.likes', { count: post.likeCount })}
         </div>
-        {post.url && (
+        {safePostUrl && (
           <a
-            href={post.url}
+            href={safePostUrl}
             target="_blank"
             rel="noopener noreferrer"
             className="inline-flex items-center gap-2 px-4 py-3 paper-note bg-[#fff7d6] font-bold text-[#c45c28] rotate-1"

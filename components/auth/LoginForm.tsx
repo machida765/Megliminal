@@ -10,15 +10,17 @@ import { AuthDivider } from '@/components/auth/AuthDivider';
 import { GoogleSignInButton } from '@/components/auth/GoogleSignInButton';
 import { useAuth } from '@/components/providers/AuthProvider';
 import { useTranslations } from '@/components/providers/LocaleProvider';
+import { getSafeRedirectPath } from '@/lib/auth/safe-redirect';
 
 function LoginFormInner() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { t } = useTranslations();
   const { signInWithPassword } = useAuth();
-  const redirectTo = searchParams.get('redirect') || '/';
+  const redirectTo = getSafeRedirectPath(searchParams.get('redirect'));
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
+  const resetSuccess = searchParams.get('reset') === 'success';
 
   useEffect(() => {
     if (searchParams.get('error') === 'auth_callback') {
@@ -74,6 +76,12 @@ function LoginFormInner() {
           <GoogleSignInButton onError={setErrorMessage} />
           <AuthDivider />
 
+          {resetSuccess ? (
+            <p className="text-sm text-green-700 bg-green-50 border border-green-200 rounded-sm px-3 py-2 mb-4">
+              {t('auth.resetPassword.successLogin')}
+            </p>
+          ) : null}
+
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-2">
               <label className="block text-sm font-semibold">
@@ -89,9 +97,17 @@ function LoginFormInner() {
             </div>
 
             <div className="space-y-2">
-              <label className="block text-sm font-semibold">
-                {t('auth.login.password')}
-              </label>
+              <div className="flex items-center justify-between gap-2">
+                <label className="block text-sm font-semibold">
+                  {t('auth.login.password')}
+                </label>
+                <Link
+                  href="/forgot-password"
+                  className="text-xs text-orange-600 font-semibold hover:underline"
+                >
+                  {t('auth.login.forgotPasswordLink')}
+                </Link>
+              </div>
               <Input
                 type="password"
                 name="password"

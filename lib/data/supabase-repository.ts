@@ -19,6 +19,13 @@ import {
   POST_SELECT,
   type SupabasePostRow,
 } from '@/lib/data/supabase-posts';
+import {
+  createPostSchema,
+  postIdSchema,
+  updatePostSchema,
+  updateProfileSchema,
+  userIdSchema,
+} from '@/lib/validation/data';
 import type {
   Bookmark,
   Like,
@@ -49,6 +56,62 @@ export class SupabaseDataRepository implements DataRepository {
 
   private get client() {
     return this.clientFactory();
+  }
+
+  private async getAuthenticatedUserId(): Promise<string> {
+    const {
+      data: { user },
+      error,
+    } = await this.client.auth.getUser();
+
+    if (error || !user) {
+      throw new Error('認証が必要です。');
+    }
+
+    return user.id;
+  }
+
+  private async assertActingAs(userId: string): Promise<void> {
+    const validatedUserId = userIdSchema.parse(userId);
+    const authenticatedUserId = await this.getAuthenticatedUserId();
+    if (validatedUserId !== authenticatedUserId) {
+      throw new Error('他のユーザーとして操作することはできません。');
+    }
+  }
+
+  private async assertCanChangePosts(
+    ids: string[],
+    allowAdmin = false
+  ): Promise<string[]> {
+    const validatedIds = ids.map((id) => postIdSchema.parse(id));
+    const uniqueIds = [...new Set(validatedIds)];
+    const authenticatedUserId = await this.getAuthenticatedUserId();
+    const { data, error } = await this.client
+      .from('posts')
+      .select('id, user_id')
+      .in('id', uniqueIds);
+
+    if (error || !data || data.length !== uniqueIds.length) {
+      throw error ?? new Error('対象の投稿が見つかりません。');
+    }
+
+    if (data.every((post) => post.user_id === authenticatedUserId)) {
+      return uniqueIds;
+    }
+
+    if (allowAdmin) {
+      const { data: profile, error: profileError } = await this.client
+        .from('profiles')
+        .select('role')
+        .eq('id', authenticatedUserId)
+        .single();
+
+      if (!profileError && profile?.role === 'admin') {
+        return uniqueIds;
+      }
+    }
+
+    throw new Error('この投稿を変更する権限がありません。');
   }
 
   private async getHiddenPostIds(viewerUserId?: string): Promise<Set<string>> {
@@ -308,15 +371,18 @@ export class SupabaseDataRepository implements DataRepository {
   }
 
   async createPost(input: CreatePostInput): Promise<Post> {
+    const validated = createPostSchema.parse(input);
+    await this.assertActingAs(validated.userId);
+
     const { data, error } = await this.client
       .from('posts')
       .insert({
-        user_id: input.userId,
-        major_category_id: input.majorCategoryId,
-        sub_category_id: input.subCategoryId ?? null,
-        title: input.title,
-        description: input.description,
-        url: input.url ?? null,
+        user_id: validated.userId,
+        major_category_id: validated.majorCategoryId,
+        sub_category_id: validated.subCategoryId ?? null,
+        title: validated.title,
+        description: validated.description,
+        url: validated.url ?? null,
       })
       .select(POST_SELECT)
       .single();
@@ -325,7 +391,7 @@ export class SupabaseDataRepository implements DataRepository {
       throw error ?? new Error('Failed to create post');
     }
 
-    const tagIds = input.tagIds ?? [];
+    const tagIds = validated.tagIds ?? [];
     if (tagIds.length > 0) {
       await this.syncPostTags(data.id, tagIds);
       const created = await this.getPost(data.id);
@@ -336,26 +402,33 @@ export class SupabaseDataRepository implements DataRepository {
   }
 
   async updatePost(id: string, input: UpdatePostInput): Promise<Post> {
+    const [validatedId] = await this.assertCanChangePosts([id]);
+    const validated = updatePostSchema.parse(input);
     const payload: Record<string, unknown> = {};
-    if (input.majorCategoryId !== undefined) {
-      payload.major_category_id = input.majorCategoryId;
+    if (validated.majorCategoryId !== undefined) {
+      payload.major_category_id = validated.majorCategoryId;
     }
-    if (input.subCategoryId !== undefined) {
-      payload.sub_category_id = input.subCategoryId;
+    if (validated.subCategoryId !== undefined) {
+      payload.sub_category_id = validated.subCategoryId;
     }
-    if (input.title !== undefined) payload.title = input.title;
-    if (input.description !== undefined) payload.description = input.description;
-    if (input.url !== undefined) payload.url = input.url ?? null;
+    if (validated.title !== undefined) payload.title = validated.title;
+    if (validated.description !== undefined) {
+      payload.description = validated.description;
+    }
+    if (validated.url !== undefined) payload.url = validated.url;
 
-    const { error } = await this.client.from('posts').update(payload).eq('id', id);
+    const { error } = await this.client
+      .from('posts')
+      .update(payload)
+      .eq('id', validatedId);
 
     if (error) throw error;
 
-    if (input.tagIds !== undefined) {
-      await this.syncPostTags(id, input.tagIds);
+    if (validated.tagIds !== undefined) {
+      await this.syncPostTags(validatedId, validated.tagIds);
     }
 
-    const updated = await this.getPost(id);
+    const updated = await this.getPost(validatedId);
     if (!updated) throw new Error('Post not found after update');
     return updated;
   }
@@ -366,8 +439,12 @@ export class SupabaseDataRepository implements DataRepository {
 
   async deletePosts(ids: string[]): Promise<void> {
     if (ids.length === 0) return;
+    const validatedIds = await this.assertCanChangePosts(ids, true);
 
-    const { error } = await this.client.from('posts').delete().in('id', ids);
+    const { error } = await this.client
+      .from('posts')
+      .delete()
+      .in('id', validatedIds);
     if (error) throw error;
   }
 
@@ -379,13 +456,16 @@ export class SupabaseDataRepository implements DataRepository {
   }
 
   async updateUser(id: string, data: Partial<Pick<User, 'name' | 'avatarUrl'>>) {
+    const validatedId = userIdSchema.parse(id);
+    await this.assertActingAs(validatedId);
+    const validated = updateProfileSchema.parse(data);
     const { data: updated, error } = await this.client
       .from('profiles')
       .update({
-        name: data.name,
-        avatar_url: data.avatarUrl,
+        name: validated.name,
+        avatar_url: validated.avatarUrl,
       })
-      .eq('id', id)
+      .eq('id', validatedId)
       .select('id, name, avatar_url')
       .single();
 
@@ -523,19 +603,23 @@ export class SupabaseDataRepository implements DataRepository {
   }
 
   async hidePost(userId: string, postId: string) {
+    await this.assertActingAs(userId);
+    const validatedPostId = postIdSchema.parse(postId);
     const { error } = await this.client.from('hidden_posts').insert({
       user_id: userId,
-      post_id: postId,
+      post_id: validatedPostId,
     });
     if (error) throw error;
   }
 
   async unhidePost(userId: string, postId: string) {
+    await this.assertActingAs(userId);
+    const validatedPostId = postIdSchema.parse(postId);
     const { error } = await this.client
       .from('hidden_posts')
       .delete()
       .eq('user_id', userId)
-      .eq('post_id', postId);
+      .eq('post_id', validatedPostId);
     if (error) throw error;
   }
 

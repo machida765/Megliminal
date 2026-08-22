@@ -2,11 +2,12 @@
 
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
-import { Plus, LogIn, Search, Trophy, Bookmark } from 'lucide-react';
+import { Plus, LogIn, Search, Trophy, Bookmark, Shield } from 'lucide-react';
 import { useAuth } from '@/components/providers/AuthProvider';
 import { useTranslations } from '@/components/providers/LocaleProvider';
 import { UserAvatar } from '@/components/user/UserAvatar';
 import { DataSourceBadge } from '@/components/layout/DataSourceBadge';
+import { isAdminRole } from '@/lib/auth/roles';
 
 export function Navbar() {
   const { user, profile, loading } = useAuth();
@@ -52,6 +53,15 @@ export function Navbar() {
                 <span className="hidden md:inline">{t('nav.bookmarks')}</span>
               </Button>
             </Link>
+
+            {isAdminRole(profile?.role) ? (
+              <Link href="/admin" prefetch={false}>
+                <Button variant="ghost" size="sm" className="gap-1.5 px-2 sm:px-3 rotate-1">
+                  <Shield className="w-4 h-4" />
+                  <span className="hidden lg:inline">{t('nav.admin')}</span>
+                </Button>
+              </Link>
+            ) : null}
 
             <Link href="/create" prefetch={false}>
               <Button size="sm" className="gap-1.5 rotate-1">

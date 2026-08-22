@@ -5,7 +5,9 @@ import { useEffect, useState } from 'react';
 import { getRepository } from '@/lib/data';
 import { MajorCategory } from '@/types';
 import { AdminModeration } from '@/components/moderation/AdminModeration';
+import { useAuth } from '@/components/providers/AuthProvider';
 import { useTranslations } from '@/components/providers/LocaleProvider';
+import { isAdminRole } from '@/lib/auth/roles';
 import * as LucideIcons from 'lucide-react';
 import {
   ChevronUp,
@@ -38,6 +40,7 @@ function Icon({ name, className = 'w-4 h-4' }: { name?: string; className?: stri
 
 export default function AdminPage() {
   const { t } = useTranslations();
+  const { user, profile, loading: authLoading } = useAuth();
   const [tab, setTab] = useState<'categories' | 'moderation'>('categories');
   const [categories, setCategories] = useState<MajorCategory[]>([]);
   const [loading, setLoading] = useState(true);
@@ -113,6 +116,22 @@ export default function AdminPage() {
 
   const deleteTarget = categories.find((c) => c.id === deleteTargetId);
   const activeCount = categories.filter((c) => c.isActive).length;
+
+  if (authLoading) {
+    return (
+      <div className="min-h-screen bg-gray-950 text-gray-400 flex items-center justify-center">
+        {t('common.loading')}
+      </div>
+    );
+  }
+
+  if (!user || !isAdminRole(profile?.role)) {
+    return (
+      <div className="min-h-screen bg-gray-950 text-gray-400 flex items-center justify-center px-4">
+        <p className="text-center">{t('auth.errors.forbidden')}</p>
+      </div>
+    );
+  }
 
   if (loading && tab === 'categories') {
     return (

@@ -9,7 +9,15 @@ import {
   useState,
 } from 'react';
 import { createClient } from '@/lib/supabase/client';
-import type { AuthContextValue, OAuthSignInResult, SignInResult, SignUpResult } from '@/lib/auth/types';
+import type {
+  AuthContextValue,
+  OAuthSignInResult,
+  PasswordResetRequestResult,
+  PasswordUpdateResult,
+  SignInResult,
+  SignUpResult,
+} from '@/lib/auth/types';
+import { getSafeRedirectPath } from '@/lib/auth/safe-redirect';
 import { getAuthTranslator } from '@/lib/i18n/auth-messages';
 import type { Profile } from '@/types';
 
@@ -21,6 +29,8 @@ type SupabaseAuthContextValue = AuthContextValue & {
     email: string;
     password: string;
   }) => Promise<SignUpResult>;
+  requestPasswordReset: (email: string) => Promise<PasswordResetRequestResult>;
+  updatePassword: (password: string) => Promise<PasswordUpdateResult>;
 };
 
 const SupabaseAuthContext = createContext<SupabaseAuthContextValue | undefined>(
@@ -115,7 +125,7 @@ export function SupabaseAuthProvider({ children }: { children: React.ReactNode }
       const t = getAuthTranslator();
       const origin =
         typeof window !== 'undefined' ? window.location.origin : '';
-      const safeNext = redirectTo.startsWith('/') ? redirectTo : '/';
+      const safeNext = getSafeRedirectPath(redirectTo);
       const redirectUrl = `${origin}/auth/callback?next=${encodeURIComponent(safeNext)}`;
 
       const { error } = await supabase.auth.signInWithOAuth({
@@ -167,10 +177,42 @@ export function SupabaseAuthProvider({ children }: { children: React.ReactNode }
   );
 
   const signOut = useCallback(async () => {
-    await supabase.auth.signOut();
+    await supabase.auth.signOut({ scope: 'global' });
     setUser(null);
     setProfile(null);
   }, [supabase]);
+
+  const requestPasswordReset = useCallback(
+    async (email: string): Promise<PasswordResetRequestResult> => {
+      const t = getAuthTranslator();
+      const origin =
+        typeof window !== 'undefined' ? window.location.origin : '';
+      const redirectTo = `${origin}/auth/callback?next=${encodeURIComponent('/reset-password')}`;
+
+      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo,
+      });
+
+      if (error) {
+        return { error: error.message || t('auth.errors.passwordResetFailed') };
+      }
+      return {};
+    },
+    [supabase]
+  );
+
+  const updatePassword = useCallback(
+    async (password: string): Promise<PasswordUpdateResult> => {
+      const t = getAuthTranslator();
+      const { error } = await supabase.auth.updateUser({ password });
+
+      if (error) {
+        return { error: error.message || t('auth.errors.passwordUpdateFailed') };
+      }
+      return {};
+    },
+    [supabase]
+  );
 
   const value = useMemo(
     () => ({
@@ -182,8 +224,21 @@ export function SupabaseAuthProvider({ children }: { children: React.ReactNode }
       signInWithPassword,
       signInWithGoogle,
       signUp,
+      requestPasswordReset,
+      updatePassword,
     }),
-    [user, profile, loading, signOut, refreshProfile, signInWithPassword, signInWithGoogle, signUp]
+    [
+      user,
+      profile,
+      loading,
+      signOut,
+      refreshProfile,
+      signInWithPassword,
+      signInWithGoogle,
+      signUp,
+      requestPasswordReset,
+      updatePassword,
+    ]
   );
 
   return (

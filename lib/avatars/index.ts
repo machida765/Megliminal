@@ -23,11 +23,22 @@ export function pickRandomAvatarPath(): string {
 
 export function isImageAvatar(value?: string | null): boolean {
   if (!value) return false;
-  return (
-    value.startsWith('/') ||
-    value.startsWith('http://') ||
-    value.startsWith('https://')
-  );
+  if (
+    value.startsWith('/') &&
+    !value.startsWith('//') &&
+    !value.includes('\\') &&
+    !value.includes('..') &&
+    !/[\u0000-\u001f\u007f]/.test(value)
+  ) {
+    return true;
+  }
+
+  try {
+    const url = new URL(value);
+    return url.protocol === 'http:' || url.protocol === 'https:';
+  } catch {
+    return false;
+  }
 }
 
 /** DB の avatar_url を表示用に正規化（旧 emoji デフォルトはプールから補完） */

@@ -57,6 +57,7 @@ export default function PostPage({ params }: PostPageProps) {
         subCategory={subCategory}
         isOwner={isOwner}
         onHidden={() => router.push('/')}
+        onDeleted={() => router.push(user?.id ? `/profile/${user.id}` : '/')}
       />
     </div>
   );

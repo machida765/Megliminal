@@ -81,7 +81,7 @@ export function PostForm({ initialPost, onSubmit }: PostFormProps) {
           subCategoryId: formData.subCategoryId,
           title: formData.title,
           description: formData.description,
-          url: formData.url || undefined,
+          url: formData.url || null,
         });
         invalidate('posts', 'post', 'postsByUser', 'postRankings');
         onSubmit?.(updated);

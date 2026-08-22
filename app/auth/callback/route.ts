@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { getSafeRedirectPath } from '@/lib/auth/safe-redirect';
 import { createClient } from '@/lib/supabase/server';
 
 /** Google 等 OAuth 完了後、Supabase から code を受け取りセッションを確立 */
@@ -11,7 +12,7 @@ export async function GET(request: Request) {
     const supabase = await createClient();
     const { error } = await supabase.auth.exchangeCodeForSession(code);
     if (!error) {
-      const safeNext = next.startsWith('/') ? next : '/';
+      const safeNext = getSafeRedirectPath(next);
       return NextResponse.redirect(`${origin}${safeNext}`);
     }
   }
