@@ -69,8 +69,8 @@ export default function ProfilePage({ params }: ProfilePageProps) {
           </div>
         </div>
         {isSelf && (
-          <div className="flex flex-wrap gap-2">
-            <Button asChild variant="outline">
+          <div className="flex flex-wrap items-center gap-2">
+            <Button asChild>
               <Link href="/profile/edit">{t('profile.editProfile')}</Link>
             </Button>
             <Button
@@ -82,6 +82,12 @@ export default function ProfilePage({ params }: ProfilePageProps) {
               <LogOut className="w-4 h-4" />
               {t('nav.logout')}
             </Button>
+            <Link
+              href="/profile/edit#delete-account"
+              className="text-sm font-semibold text-[#9b2c1f] hover:underline"
+            >
+              {t('profile.withdraw')}
+            </Link>
           </div>
         )}
       </div>

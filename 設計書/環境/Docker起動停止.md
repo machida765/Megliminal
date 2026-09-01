@@ -15,31 +15,40 @@ Next.js アプリ本体は Docker の**外**で動きます（`npm run dev`）�
 
 ```env
 NEXT_PUBLIC_SUPABASE_URL=http://127.0.0.1:54321
-NEXT_PUBLIC_SUPABASE_ANON_KEY=（npm run supabase:status の anon key）
+NEXT_PUBLIC_SUPABASE_ANON_KEY=（status の Publishable）
+SUPABASE_SERVICE_ROLE_KEY=（status の Secret）
 ```
+
+`npm run supabase:status` の **Authentication Keys** 欄を参照する。
 
 ---
 
 ## コマンド一覧
 
-| やりたいこと | コマンド |
-|--------------|----------|
-| **起動** | `npm run supabase:start` |
-| **状態確認** | `npm run supabase:status` |
-| **停止** | `npm run supabase:stop` |
-| **DB 初期化（スキーマ + シード）** | `npx supabase db reset` |
-| **アプリ起動** | `npm run dev` |
-| **アプリ停止** | ターミナルで `Ctrl + C` |
+
+| やりたいこと                 | コマンド                      |
+| ---------------------- | ------------------------- |
+| **起動**                 | `npm run supabase:start`  |
+| **状態確認**               | `npm run supabase:status` |
+| **停止**                 | `npm run supabase:stop`   |
+| **DB 初期化（スキーマ + シード）** | `npx supabase db reset`   |
+| **アプリ起動**              | `npm run dev`             |
+| **アプリ停止**              | ターミナルで `Ctrl + C`         |
+
 
 `package.json` 内の実体:
 
-| npm スクリプト | 中身 |
-|----------------|------|
-| `supabase:start` | `npx supabase start` |
-| `supabase:stop` | `npx supabase stop` |
+
+| npm スクリプト         | 中身                    |
+| ----------------- | --------------------- |
+| `supabase:start`  | `npx supabase start`  |
+| `supabase:stop`   | `npx supabase stop`   |
 | `supabase:status` | `npx supabase status` |
 
+
 ---
+
+
 
 ## 起動手順（日常）
 
@@ -53,8 +62,10 @@ cd "C:\Users\zombi\Desktop\開発\Megliminal"
 # 2. ローカル Supabase を起動
 npm run supabase:start
 
-# 3. URL / anon key を確認（.env.local と一致しているか）
+# 3. URL / キーを確認（.env.local と一致しているか）
 npm run supabase:status
+#   Publishable → NEXT_PUBLIC_SUPABASE_ANON_KEY
+#   Secret      → SUPABASE_SERVICE_ROLE_KEY
 
 # 4. Next.js を起動
 npm run dev
@@ -65,16 +76,22 @@ npm run dev
 
 ### 主な URL（起動後）
 
-| 用途 | URL |
-|------|-----|
-| アプリ | http://localhost:3000 |
-| Supabase API | http://127.0.0.1:54321 |
-| Studio（DB 管理） | http://127.0.0.1:54323（status で確認） |
-| メール確認（Mailpit） | http://127.0.0.1:54324 |
+
+| 用途             | URL                                                                 |
+| -------------- | ------------------------------------------------------------------- |
+| アプリ            | [http://localhost:3000](http://localhost:3000)                      |
+| Supabase API   | [http://127.0.0.1:54321](http://127.0.0.1:54321)                    |
+| Studio（DB 管理）  | [http://127.0.0.1:54323（status](http://127.0.0.1:54323（status) で確認） |
+| メール確認（Mailpit） | [http://127.0.0.1:54324](http://127.0.0.1:54324)                    |
+
 
 ---
 
+
+
 ## 停止手順
+
+
 
 ### Supabase（Docker コンテナ）だけ止める
 
@@ -94,6 +111,8 @@ npx supabase stop --no-backup
 
 ---
 
+
+
 ## 初回 or DB を空にしたあと
 
 スキーマと開発用データを入れる:
@@ -107,6 +126,8 @@ npx supabase db reset
 
 ---
 
+
+
 ## ログイン（Docker モード）
 
 Google ログインは**クラウド Supabase 向け**。Docker ではメール/パスワードを使う。
@@ -116,18 +137,24 @@ Google ログインは**クラウド Supabase 向け**。Docker ではメール/
 1. `/signup` でメール・パスワードを登録
 2. ローカルはメール確認 OFF なので、そのまま `/login` からログイン可能
 
+
+
 ### シードユーザー（`db reset` 済みの場合）
 
-| メール | パスワード |
-|--------|------------|
+
+| メール                           | パスワード               |
+| ----------------------------- | ------------------- |
 | `dev-seed-001@megliminal.dev` | `dev-seed-password` |
-| `dev-seed-002@megliminal.dev` | 同上 |
+| `dev-seed-002@megliminal.dev` | 同上                  |
+
 
 ---
 
+
+
 ## 注意（Docker Desktop の UI）
 
-**Docker Desktop の Compose「Start」ボタンから `megliminal` を起動しない。**
+**Docker Desktop の Compose「Start」ボタンから** `megliminal` **を起動しない。**
 
 このリポジトリにはルートの `docker-compose.yml` がなく、Supabase CLI が内部でコンテナを管理する。  
 Desktop から起動すると次のようなエラーになることがある:
@@ -136,28 +163,36 @@ Desktop から起動すると次のようなエラーになることがある:
 no container found for project "megliminal": not found
 ```
 
-**正しい方法はターミナルの `npm run supabase:start` のみ。**  
+**正しい方法はターミナルの** `npm run supabase:start` **のみ。**  
 Docker Desktop は「起動しておく」用途だけでよい。
 
 ---
 
+
+
 ## よくあるエラー
 
-| 症状 | 対処 |
-|------|------|
-| `Cannot connect to Docker` | Docker Desktop を起動 |
-| `container is not running: exited` | `npm run supabase:stop` → `npm run supabase:start` |
-| ポート競合 | 54321 等を使うプロセスを止める、または `supabase:stop` |
-| バッジが Cloud のまま | `.env.local` の URL が `127.0.0.1:54321` か、dev サーバー再起動 |
-| 投稿・ユーザーが空 | `npx supabase db reset` |
+
+| 症状                                 | 対処                                                   |
+| ---------------------------------- | ---------------------------------------------------- |
+| `Cannot connect to Docker`         | Docker Desktop を起動                                   |
+| `container is not running: exited` | `npm run supabase:stop` → `npm run supabase:start`   |
+| ポート競合                              | 54321 等を使うプロセスを止める、または `supabase:stop`               |
+| バッジが Cloud のまま                     | `.env.local` の URL が `127.0.0.1:54321` か、dev サーバー再起動 |
+| 投稿・ユーザーが空                          | `npx supabase db reset`                              |
+
 
 ---
 
+
+
 ## 2モードとの関係
 
-| モード | Docker 要否 | 起動 |
-|--------|-------------|------|
-| **Docker** | 必要 | `supabase:start` → `npm run dev` |
-| **Cloud** | 不要 | `npm run dev` のみ（`.env.local` をクラウド URL に） |
 
-切り替えは `.env.local` を書き換え、**`npm run dev` を再起動**する。
+| モード        | Docker 要否 | 起動                                         |
+| ---------- | --------- | ------------------------------------------ |
+| **Docker** | 必要        | `supabase:start` → `npm run dev`           |
+| **Cloud**  | 不要        | `npm run dev` のみ（`.env.local` をクラウド URL に） |
+
+
+切り替えは `.env.local` を書き換え、`npm run dev` **を再起動**する。

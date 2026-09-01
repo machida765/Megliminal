@@ -53,6 +53,27 @@ export const updateProfileSchema = z
 
 export const postIdSchema = uuidSchema;
 export const userIdSchema = uuidSchema;
+export const commentIdSchema = uuidSchema;
+export const categoryIdSchema = idSchema;
+
+export const commentBodySchema = z.string().trim().min(1).max(1000);
+
+export const reportReasonSchema = z.enum([
+  'spam',
+  'inappropriate',
+  'misinformation',
+  'other',
+]);
+
+export const reportDetailSchema = z.string().trim().max(1000);
+
+export const majorCategorySchema = z.object({
+  id: idSchema,
+  name: z.string().trim().min(1).max(50),
+  icon: z.string().trim().max(50).optional(),
+  order: z.number().int().min(0).max(9999),
+  isActive: z.boolean(),
+});
 
 /** 保存済みデータをリンク表示する際も危険なスキームを除外する。 */
 export function getSafeHttpUrl(value: string | null | undefined): string | null {

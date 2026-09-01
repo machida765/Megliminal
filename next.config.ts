@@ -2,6 +2,28 @@ import type { NextConfig } from "next";
 
 const isProduction = process.env.NODE_ENV === "production";
 
+/** 開発時のローカル Supabase（http/ws）を connect-src に許可する */
+function getDevSupabaseConnectSrc(): string {
+  if (isProduction) return "";
+
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  if (!url) return "";
+
+  try {
+    const parsed = new URL(url);
+    const isLocal =
+      parsed.hostname === "localhost" || parsed.hostname === "127.0.0.1";
+    if (!isLocal || parsed.protocol !== "http:") return "";
+
+    const wsOrigin = parsed.origin.replace(/^http/, "ws");
+    return ` ${parsed.origin} ${wsOrigin}`;
+  } catch {
+    return "";
+  }
+}
+
+const devSupabaseConnectSrc = getDevSupabaseConnectSrc();
+
 const contentSecurityPolicy = [
   "default-src 'self'",
   "base-uri 'self'",
@@ -12,7 +34,7 @@ const contentSecurityPolicy = [
   "font-src 'self' data:",
   "style-src 'self' 'unsafe-inline'",
   `script-src 'self' 'unsafe-inline'${isProduction ? "" : " 'unsafe-eval'"}`,
-  "connect-src 'self' https: wss:",
+  `connect-src 'self' https: wss:${devSupabaseConnectSrc}`,
   "media-src 'self' https:",
   "worker-src 'self' blob:",
   ...(isProduction ? ["upgrade-insecure-requests"] : []),

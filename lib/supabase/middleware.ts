@@ -41,7 +41,7 @@ export async function updateSession(request: NextRequest) {
 
   const pathname = request.nextUrl.pathname;
 
-  const loginRequiredPaths = ['/create', '/profile/edit', '/bookmarks', '/reset-password'];
+  const loginRequiredPaths = ['/create', '/profile/edit', '/settings', '/bookmarks', '/reset-password'];
   const isLoginRequired = loginRequiredPaths.some((p) => pathname.startsWith(p));
   const isEditPost = /^\/post\/[^/]+\/edit/.test(pathname);
   const isAdminPath = pathname.startsWith('/admin');

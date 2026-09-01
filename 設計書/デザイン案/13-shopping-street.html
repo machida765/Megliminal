@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>メグリミナル — 商店街の軒先</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@400;500;700;900&family=Shippori+Mincho:wght@600;700;800&display=swap" rel="stylesheet" />
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: "Zen Maru Gothic", sans-serif;
+      color: #3d2b1f;
+      background: #f7ead6;
+      min-height: 100vh;
+    }
+
+    nav {
+      position: sticky; top: 0; z-index: 30;
+      display: flex; justify-content: space-between; align-items: center; gap: 12px;
+      padding: 12px 20px; background: #fffaf0; border-bottom: 3px double #d9b98a;
+    }
+    .brand b { font-family: "Shippori Mincho", serif; font-size: 21px; }
+    .brand small { display: block; color: #a9713c; font-size: 11px; margin-top: 2px; }
+    .nav-actions { display: flex; gap: 6px; flex-wrap: wrap; }
+    .btn {
+      text-decoration: none; color: #3d2b1f; font-size: 13px;
+      background: #fff; border: 1px solid #e0c39a; padding: 7px 12px; border-radius: 4px;
+    }
+    .btn.primary { background: #b91c1c; color: #fff; border-color: #b91c1c; font-weight: 800; }
+    .btn.cream { background: #fffaf0; color: #b91c1c; border: none; font-weight: 800; }
+
+    /* 日よけテント */
+    .awning {
+      height: 26px;
+      background: repeating-linear-gradient(90deg, #c2410c 0 26px, #fff4e2 26px 52px);
+      border-bottom: 3px solid #8a3a10;
+    }
+
+    main { max-width: 1120px; margin: 0 auto; padding: 22px 14px 90px; }
+
+    /* のれん + 看板 */
+    .storefront {
+      background: #fffaf0; border: 2px solid #d9b98a; border-radius: 4px;
+      box-shadow: 4px 6px 0 rgba(140,90,40,.14);
+      overflow: hidden; display: grid; gap: 0;
+    }
+    @media (min-width: 900px) { .storefront { grid-template-columns: 1.4fr .6fr; } }
+    .noren {
+      background: linear-gradient(180deg, #7f1d1d, #991b1b);
+      color: #fff6e5; padding: 10px 20px; font-family: "Shippori Mincho", serif;
+      letter-spacing: .22em; font-size: 13px; grid-column: 1 / -1;
+      display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap;
+    }
+    .noren .r { letter-spacing: normal; font-family: "Zen Maru Gothic", sans-serif; font-size: 11.5px; opacity: .85; }
+    .front-txt { padding: 26px 24px 24px; }
+    .front-txt .kicker {
+      display: inline-block; background: #fde68a; color: #92400e; font-size: 11.5px;
+      font-weight: 800; padding: 4px 10px; border-radius: 2px; letter-spacing: .08em;
+    }
+    .front-txt h1 { font-family: "Shippori Mincho", serif; font-size: clamp(26px, 4.2vw, 40px); margin: 12px 0 12px; line-height: 1.24; }
+    .front-txt p { margin: 0 0 16px; line-height: 1.85; color: #6b5136; font-size: 14.5px; max-width: 34em; }
+    .front-txt .facts { display: flex; flex-wrap: wrap; gap: 12px; font-size: 12.5px; color: #8a6743; margin-bottom: 16px; }
+    /* 値札 */
+    .fuda {
+      display: grid; place-items: center; padding: 24px 18px;
+      background: repeating-linear-gradient(45deg, #fff4e2 0 10px, #fdeacd 10px 20px);
+      border-left: 2px dashed #d9b98a;
+    }
+    .tag-card {
+      background: #fffdf6; border: 2px solid #b91c1c; border-radius: 4px;
+      padding: 16px 20px; text-align: center; rotate: -4deg;
+      box-shadow: 3px 4px 0 rgba(140,40,20,.18);
+    }
+    .tag-card small { font-size: 11px; letter-spacing: .16em; color: #b91c1c; font-weight: 800; }
+    .tag-card b { display: block; font-family: "Shippori Mincho", serif; font-size: 42px; color: #b91c1c; line-height: 1.1; }
+    .tag-card span { font-size: 12px; color: #8a6743; }
+
+    /* 検索 */
+    .search {
+      display: flex; gap: 8px; flex-wrap: wrap; align-items: center;
+      background: #fffaf0; border: 2px solid #d9b98a; border-radius: 4px; padding: 8px; margin-top: 20px;
+    }
+    .search input { flex: 1; min-width: 190px; border: 0; outline: 0; font: inherit; padding: 10px 12px; background: transparent; }
+    .streets { display: flex; gap: 7px; overflow-x: auto; margin-top: 12px; padding-bottom: 4px; }
+    .streets a {
+      flex: none; text-decoration: none; font-size: 12.5px; font-weight: 700; color: #6b5136;
+      background: #fffaf0; border: 1px solid #e0c39a; padding: 7px 13px; border-radius: 4px; white-space: nowrap;
+    }
+    .streets a.on { background: #7f1d1d; color: #fff; border-color: #7f1d1d; }
+
+    /* セクション見出し（提灯風） */
+    .sec {
+      display: flex; align-items: center; gap: 12px; margin: 34px 0 14px;
+    }
+    .sec h2 {
+      font-family: "Shippori Mincho", serif; font-size: 20px; margin: 0;
+      background: #7f1d1d; color: #fff6e5; padding: 7px 16px; border-radius: 3px;
+    }
+    .sec .n { font-size: 12px; color: #8a6743; }
+    .sec a { margin-left: auto; font-size: 13px; font-weight: 800; color: #b91c1c; text-decoration: none; }
+
+    /* 店先のワゴン（情報量多め） */
+    .wagon { display: grid; gap: 12px; }
+    @media (min-width: 700px) { .wagon { grid-template-columns: repeat(2, 1fr); } }
+    @media (min-width: 1020px) { .wagon { grid-template-columns: repeat(3, 1fr); } }
+    .goods {
+      position: relative;
+      background: #fffdf6; border: 1px solid #e0c39a; border-radius: 3px;
+      box-shadow: 3px 4px 0 rgba(140,90,40,.1);
+      padding: 14px 15px 12px;
+    }
+    /* 角の値札シール */
+    .goods .seal {
+      position: absolute; top: -8px; right: -8px;
+      background: #b91c1c; color: #fff; font-size: 11px; font-weight: 800;
+      border-radius: 50%; width: 46px; height: 46px; display: grid; place-items: center;
+      rotate: 12deg; box-shadow: 2px 3px 0 rgba(120,20,20,.2);
+    }
+    .goods .cat { font-size: 11px; font-weight: 800; color: #b45309; }
+    .goods h3 { font-family: "Shippori Mincho", serif; font-size: 16.5px; margin: 6px 0 7px; line-height: 1.4; padding-right: 44px; }
+    .goods p { margin: 0; font-size: 12.5px; line-height: 1.72; color: #6b5136; }
+    .goods .tags { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 9px; }
+    .goods .tags span { font-size: 10.5px; background: #fdeacd; border: 1px solid #e8cfa4; padding: 2px 6px; border-radius: 2px; color: #8a6743; }
+    .goods .foot {
+      display: flex; justify-content: space-between; align-items: center;
+      margin-top: 10px; padding-top: 9px; border-top: 1px dashed #e0c39a;
+      font-size: 11.5px; color: #8a6743;
+    }
+    .goods .foot .h { color: #b91c1c; font-weight: 800; }
+
+    /* 下段 */
+    .two { display: grid; gap: 18px; margin-top: 34px; }
+    @media (min-width: 900px) { .two { grid-template-columns: 1.3fr .7fr; } }
+    .panel { background: #fffaf0; border: 1px solid #e0c39a; border-radius: 3px; }
+    .panel .ph {
+      background: #f3e2c6; padding: 10px 15px; font-family: "Shippori Mincho", serif;
+      font-size: 15px; display: flex; justify-content: space-between; align-items: center;
+      border-bottom: 1px solid #e0c39a;
+    }
+    .panel .ph a { font-size: 12px; color: #b91c1c; text-decoration: none; font-weight: 800; }
+    .panel .pb { padding: 14px 15px; }
+    .rank { list-style: none; margin: 0; padding: 0; }
+    .rank li { display: flex; align-items: center; gap: 12px; padding: 10px 15px; border-bottom: 1px solid #f0e2ca; }
+    .rank li:last-child { border-bottom: 0; }
+    .rank .no {
+      width: 25px; height: 25px; flex: none; display: grid; place-items: center;
+      background: #b91c1c; color: #fff; font-size: 12px; font-weight: 800; border-radius: 2px;
+    }
+    .rank .no.s { background: #c9a06e; }
+    .rank .t { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 700; font-size: 14px; }
+    .rank .h { color: #b91c1c; font-weight: 800; font-size: 13px; }
+    .tagcloud { display: flex; flex-wrap: wrap; gap: 6px; }
+    .tagcloud a { text-decoration: none; font-size: 12px; color: #6b5136; background: #fdeacd; border: 1px solid #e8cfa4; padding: 4px 9px; border-radius: 2px; }
+    .kpi { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
+    .kpi div { background: #fdeacd; padding: 10px 12px; border-radius: 2px; }
+    .kpi b { display: block; font-family: "Shippori Mincho", serif; font-size: 24px; color: #7f1d1d; }
+    .kpi small { font-size: 11px; color: #8a6743; }
+
+    .closing {
+      margin-top: 26px; background: #fffaf0; border: 2px solid #d9b98a;
+      border-radius: 3px; padding: 26px 22px; text-align: center;
+      box-shadow: 4px 6px 0 rgba(140,90,40,.12);
+    }
+    .closing h2 { font-family: "Shippori Mincho", serif; margin: 0 0 8px; font-size: 23px; }
+    .closing p { margin: 0 0 16px; font-size: 13.5px; color: #6b5136; line-height: 1.85; }
+
+    .back { position: fixed; left: 16px; bottom: 16px; background: #3d2b1f; color: #fff; text-decoration: none; padding: 8px 12px; border-radius: 999px; font-size: 12px; z-index: 40; }
+  </style>
+</head>
+<body>
+  <nav>
+    <div class="brand"><b>メグリミナル商店街</b><small>軒先に、誰かのおすすめ</small></div>
+    <div class="nav-actions">
+      <a class="btn" href="#">売れ筋</a>
+      <a class="btn" href="#">取り置き</a>
+      <a class="btn primary" href="#">軒先に出す</a>
+      <a class="btn" href="#">ログイン</a>
+    </div>
+  </nav>
+  <div class="awning"></div>
+
+  <main>
+    <section class="storefront">
+      <div class="noren">
+        <span>本日のおすすめ</span>
+        <span class="r">アルゴリズムなし · 人が置いたものだけ</span>
+      </div>
+      <div class="front-txt">
+        <span class="kicker">店主のイチオシ</span>
+        <h1>Cursor（AIコードエディタ）</h1>
+        <p>VSCodeベースのAI統合エディタ。プロンプト一つでコード生成・リファクタリングが可能。開発速度が劇的に上がりました。</p>
+        <div class="facts">
+          <span>👨‍💻 Taro が置いた</span><span>アプリ › 開発ツール</span><span>#しごと #AI</span><span>08/28</span>
+        </div>
+        <a class="btn primary" href="#">手に取ってみる →</a>
+      </div>
+      <div class="fuda">
+        <div class="tag-card">
+          <small>いいね</small>
+          <b>30</b>
+          <span>保存 12 件</span>
+        </div>
+      </div>
+    </section>
+
+    <div class="search">
+      <input placeholder="キーワードで軒先を探す" />
+      <a class="btn primary" href="#">探す</a>
+      <a class="btn" href="#">くわしく絞る</a>
+    </div>
+    <div class="streets">
+      <a class="on" href="#">すべての通り</a><a href="#">YouTube</a><a href="#">本・書籍</a><a href="#">映画</a>
+      <a href="#">音楽</a><a href="#">ゲーム</a><a href="#">グルメ</a><a href="#">アプリ</a><a href="#">まんが</a>
+    </div>
+
+    <div class="sec">
+      <h2>今朝入った品</h2>
+      <span class="n">貼られた順 · 全128件</span>
+      <a href="#">すべて見る →</a>
+    </div>
+    <div class="wagon">
+      <article class="goods">
+        <div class="seal">♥15</div>
+        <div class="cat">YouTube › 教養</div>
+        <h3>ゆる言語学ラジオ</h3>
+        <p>言語学をテーマにした解説チャンネル。話し手2人のテンポが心地よく、通勤中に聞くのにちょうどいい。</p>
+        <div class="tags"><span>#ラジオ</span><span>#ことば</span><span>#ながら聞き</span></div>
+        <div class="foot"><span>👨‍💻 Taro · 08/26</span><span class="h">保存 5</span></div>
+      </article>
+      <article class="goods">
+        <div class="seal">♥30</div>
+        <div class="cat">アプリ › 開発ツール</div>
+        <h3>Cursor（AIコードエディタ）</h3>
+        <p>プロンプト一つでコード生成。リファクタリングも会話で進むので、開発速度が劇的に上がりました。</p>
+        <div class="tags"><span>#しごと</span><span>#AI</span><span>#効率化</span></div>
+        <div class="foot"><span>👨‍💻 Taro · 08/28</span><span class="h">保存 12</span></div>
+      </article>
+      <article class="goods">
+        <div class="seal">♥8</div>
+        <div class="cat">本・書籍 › 小説</div>
+        <h3>「火花」— 又吉直樹</h3>
+        <p>笑いと切なさが交錯する世界観に引き込まれました。読み終わったあと、しばらく黙ってしまう類の本。</p>
+        <div class="tags"><span>#小説</span><span>#芥川賞</span></div>
+        <div class="foot"><span>📚 Yuki · 08/25</span><span class="h">保存 3</span></div>
+      </article>
+      <article class="goods">
+        <div class="seal">♥20</div>
+        <div class="cat">映画 › SF</div>
+        <h3>インセプション</h3>
+        <p>何度観ても新しい発見があります。音響設計も完璧で、できれば良い環境で観てほしい一本。</p>
+        <div class="tags"><span>#SF</span><span>#ノーラン</span><span>#音響</span></div>
+        <div class="foot"><span>🎬 Jiro · 08/24</span><span class="h">保存 9</span></div>
+      </article>
+      <article class="goods">
+        <div class="seal">♥25</div>
+        <div class="cat">本・書籍 › SF</div>
+        <h3>「三体」— 劉慈欣</h3>
+        <p>スケールが圧倒的で、物理法則すら武器にするアイデアに震えます。1巻の折り返しから止まらない。</p>
+        <div class="tags"><span>#SF</span><span>#長編</span></div>
+        <div class="foot"><span>👩‍🎨 Hanako · 08/23</span><span class="h">保存 11</span></div>
+      </article>
+      <article class="goods">
+        <div class="seal">♥12</div>
+        <div class="cat">YouTube › 料理</div>
+        <h3>リュウジのバズレシピ</h3>
+        <p>再現性が高く、材料も手に入りやすい時短シリーズ。平日夜のレパートリーが確実に増えます。</p>
+        <div class="tags"><span>#料理</span><span>#時短</span></div>
+        <div class="foot"><span>👩‍🎨 Hanako · 08/22</span><span class="h">保存 4</span></div>
+      </article>
+    </div>
+
+    <div class="two">
+      <div class="panel">
+        <div class="ph"><span>今週の売れ筋</span><a href="#">すべて見る →</a></div>
+        <ol class="rank">
+          <li><span class="no">1</span><span class="t">Cursor（AIコードエディタ）</span><span class="h">♥ 30</span></li>
+          <li><span class="no">2</span><span class="t">「三体」— 劉慈欣</span><span class="h">♥ 25</span></li>
+          <li><span class="no">3</span><span class="t">インセプション</span><span class="h">♥ 20</span></li>
+          <li><span class="no s">4</span><span class="t">ゆる言語学ラジオ</span><span class="h">♥ 15</span></li>
+          <li><span class="no s">5</span><span class="t">リュウジのバズレシピ</span><span class="h">♥ 12</span></li>
+        </ol>
+      </div>
+      <div>
+        <div class="panel" style="margin-bottom:14px">
+          <div class="ph"><span>札の付いたタグ</span></div>
+          <div class="pb">
+            <div class="tagcloud">
+              <a href="#">#SF</a><a href="#">#しごと</a><a href="#">#AI</a><a href="#">#料理</a>
+              <a href="#">#小説</a><a href="#">#時短</a><a href="#">#ラジオ</a><a href="#">#音響</a>
+            </div>
+          </div>
+        </div>
+        <div class="panel">
+          <div class="ph"><span>今日の商店街</span></div>
+          <div class="pb">
+            <div class="kpi">
+              <div><b>128</b><small>件の投稿</small></div>
+              <div><b>842</b><small>♥ の数</small></div>
+              <div><b>34</b><small>人くらい</small></div>
+              <div><b>9</b><small>大ジャンル</small></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <section class="closing">
+      <h2>あなたも、軒先に置いてみませんか</h2>
+      <p>大ジャンルにつき週に1回だけ。だから、ひとつひとつが濃くなります。</p>
+      <a class="btn primary" href="#">おすすめを出す →</a>
+    </section>
+  </main>
+  <a class="back" href="./index.html">← 案一覧</a>
+</body>
+</html>

@@ -5,6 +5,7 @@ import { useCallback } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { getRepository } from '@/lib/data';
 import type {
+  Comment,
   MajorCategory,
   Post,
   PostRankingEntry,
@@ -126,6 +127,21 @@ export function usePostsByUser(userId: string, viewerUserId?: string | null) {
   });
 
   return { posts: data, loading: userId ? isLoading : false };
+}
+
+/** 投稿へのコメント一覧 */
+export function useComments(postId: string | null | undefined) {
+  const { data = [], isLoading, refetch } = useQuery<Comment[]>({
+    queryKey: ['comments', postId ?? null],
+    queryFn: () => (postId ? getRepository().getComments(postId) : Promise.resolve([])),
+    enabled: Boolean(postId),
+  });
+
+  const reload = useCallback(async () => {
+    await refetch();
+  }, [refetch]);
+
+  return { comments: data, loading: postId ? isLoading : false, reload };
 }
 
 /** ブックマーク投稿一覧 */

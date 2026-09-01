@@ -47,7 +47,11 @@ export default function AdminPage() {
   const [newName, setNewName] = useState('');
   const [newIcon, setNewIcon] = useState('Star');
   const [addError, setAddError] = useState('');
+  const [actionError, setActionError] = useState('');
   const [deleteTargetId, setDeleteTargetId] = useState<string | null>(null);
+
+  const toMessage = (error: unknown, fallback: string) =>
+    error instanceof Error && error.message ? error.message : fallback;
 
   const reload = async () => {
     const data = await getRepository().getMajorCategories();
@@ -78,17 +82,28 @@ export default function AdminPage() {
       isActive: true,
     };
 
-    await getRepository().upsertMajorCategory(newCat);
-    await reload();
-    setNewName('');
-    setNewIcon('Star');
-    setAddError('');
+    try {
+      await getRepository().upsertMajorCategory(newCat);
+      await reload();
+      setNewName('');
+      setNewIcon('Star');
+      setAddError('');
+      setActionError('');
+    } catch (error) {
+      setAddError(toMessage(error, t('admin.categories.saveFailed')));
+    }
   };
 
   const handleDelete = async (id: string) => {
-    await getRepository().deleteMajorCategory(id);
-    await reload();
-    setDeleteTargetId(null);
+    try {
+      await getRepository().deleteMajorCategory(id);
+      await reload();
+      setDeleteTargetId(null);
+      setActionError('');
+    } catch (error) {
+      setDeleteTargetId(null);
+      setActionError(toMessage(error, t('admin.categories.deleteFailed')));
+    }
   };
 
   const handleMove = async (id: string, direction: 'up' | 'down') => {
@@ -100,18 +115,30 @@ export default function AdminPage() {
     const swapIdx = direction === 'up' ? idx - 1 : idx + 1;
     [next[idx], next[swapIdx]] = [next[swapIdx], next[idx]];
     const ids = next.map((c) => c.id);
-    const reordered = await getRepository().reorderMajorCategories(ids);
-    setCategories(reordered);
+
+    try {
+      const reordered = await getRepository().reorderMajorCategories(ids);
+      setCategories(reordered);
+      setActionError('');
+    } catch (error) {
+      setActionError(toMessage(error, t('admin.categories.reorderFailed')));
+    }
   };
 
   const handleToggleActive = async (id: string) => {
     const target = categories.find((c) => c.id === id);
     if (!target) return;
-    await getRepository().upsertMajorCategory({
-      ...target,
-      isActive: !target.isActive,
-    });
-    await reload();
+
+    try {
+      await getRepository().upsertMajorCategory({
+        ...target,
+        isActive: !target.isActive,
+      });
+      await reload();
+      setActionError('');
+    } catch (error) {
+      setActionError(toMessage(error, t('admin.categories.saveFailed')));
+    }
   };
 
   const deleteTarget = categories.find((c) => c.id === deleteTargetId);
@@ -179,6 +206,11 @@ export default function AdminPage() {
 
         {tab === 'categories' && (
         <>
+        {actionError && (
+          <p className="rounded-lg border border-red-900 bg-red-950/40 px-4 py-3 text-sm text-red-300">
+            {actionError}
+          </p>
+        )}
         <section>
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-sm font-semibold text-gray-400 uppercase tracking-widest">

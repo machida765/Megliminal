@@ -1,0 +1,386 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>メグリミナル — 本屋の平台</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@400;500;700;900&family=Shippori+Mincho:wght@600;700;800&display=swap" rel="stylesheet" />
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: "Zen Maru Gothic", sans-serif;
+      color: #3b2a22;
+      background: #ece0cd;
+      min-height: 100vh;
+    }
+
+    /* 木の平台 */
+    .wood {
+      background:
+        repeating-linear-gradient(90deg, rgba(120,80,40,.05) 0 3px, transparent 3px 9px),
+        linear-gradient(180deg, #c79a68, #b3855a);
+    }
+
+    nav {
+      position: sticky; top: 0; z-index: 30;
+      display: flex; justify-content: space-between; align-items: center; gap: 12px;
+      padding: 12px 20px;
+      background: #fffaf2;
+      border-bottom: 3px solid #c79a68;
+    }
+    .brand b { font-family: "Shippori Mincho", serif; font-size: 21px; letter-spacing: .02em; }
+    .brand small { display: block; color: #a2643c; font-size: 11px; margin-top: 2px; }
+    .nav-actions { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
+    .btn {
+      text-decoration: none; color: #3b2a22; font-size: 13px;
+      background: #fff; border: 1px solid #ddc3a2; padding: 7px 12px; border-radius: 3px;
+    }
+    .btn.primary { background: #c2410c; color: #fff; border-color: #c2410c; font-weight: 800; }
+    .btn.sm { font-size: 12px; padding: 5px 9px; }
+
+    /* 棚タブ */
+    .shelf-tabs {
+      position: sticky; top: 59px; z-index: 20;
+      display: flex; gap: 0; overflow-x: auto;
+      background: #fffaf2; border-bottom: 1px solid #ddc3a2;
+      padding: 0 12px;
+    }
+    .shelf-tabs a {
+      flex: none; text-decoration: none; color: #6b5344; font-size: 13px; font-weight: 700;
+      padding: 11px 14px; border-bottom: 3px solid transparent; white-space: nowrap;
+    }
+    .shelf-tabs a.on { color: #c2410c; border-bottom-color: #c2410c; }
+
+    main { max-width: 1160px; margin: 0 auto; padding: 20px 14px 90px; }
+
+    /* 平台ヒーロー */
+    .hirodai {
+      position: relative;
+      border-radius: 4px;
+      padding: 26px 20px 30px;
+      box-shadow: inset 0 0 0 3px rgba(255,240,215,.25), 0 10px 24px rgba(90,50,20,.18);
+      display: grid; gap: 18px;
+    }
+    @media (min-width: 900px) { .hirodai { grid-template-columns: 1.35fr .65fr; align-items: start; } }
+
+    /* 帯付きの一冊 */
+    .featured {
+      background: #fffdf6;
+      border: 1px solid #e0c9a8;
+      border-radius: 2px;
+      box-shadow: 5px 7px 0 rgba(70,40,15,.18);
+      overflow: hidden;
+      rotate: -.6deg;
+    }
+    .featured .body { padding: 24px 22px 0; }
+    .featured .kicker {
+      display: inline-block; background: #fef3c7; color: #92400e;
+      font-size: 11px; font-weight: 800; letter-spacing: .1em;
+      padding: 4px 9px; border-radius: 2px;
+    }
+    .featured h1 {
+      font-family: "Shippori Mincho", serif;
+      font-size: clamp(26px, 4vw, 40px); line-height: 1.25; margin: 12px 0 10px;
+    }
+    .featured .lead { margin: 0 0 16px; color: #6b5344; line-height: 1.85; font-size: 14.5px; }
+    .featured .credits { display: flex; flex-wrap: wrap; gap: 14px; font-size: 12.5px; color: #8a6a52; padding-bottom: 20px; }
+    /* 帯 */
+    .obi {
+      background: linear-gradient(180deg, #d9480f, #b23a08);
+      color: #fff; padding: 14px 22px;
+      display: flex; justify-content: space-between; align-items: center; gap: 14px; flex-wrap: wrap;
+    }
+    .obi .catch { font-family: "Shippori Mincho", serif; font-size: 17px; font-weight: 700; }
+    .obi .num { font-size: 13px; opacity: .9; }
+    .obi .btn { background: #fff; color: #b23a08; border: none; font-weight: 800; }
+
+    /* 手書きPOP */
+    .pop {
+      background: #fff8d4; border: 1px solid #e8d48a;
+      padding: 14px 15px; rotate: 1.6deg;
+      box-shadow: 3px 4px 0 rgba(70,40,15,.14);
+      margin-bottom: 14px;
+    }
+    .pop .who { font-size: 11px; font-weight: 800; color: #a16207; }
+    .pop p { margin: 6px 0 0; font-size: 13px; line-height: 1.75; color: #4a3a22; }
+    .pop.alt { background: #ffe9d6; border-color: #edc4a0; rotate: -1.4deg; }
+
+    /* セクション見出し */
+    .sec-head {
+      display: flex; align-items: baseline; justify-content: space-between;
+      gap: 12px; margin: 40px 0 14px; border-bottom: 2px solid #c79a68; padding-bottom: 8px;
+    }
+    .sec-head h2 { font-family: "Shippori Mincho", serif; font-size: 21px; margin: 0; }
+    .sec-head .note { font-size: 12px; color: #8a6a52; }
+    .sec-head a { font-size: 13px; color: #c2410c; font-weight: 800; text-decoration: none; }
+
+    /* 平積みカード（情報量多め） */
+    .stack { display: grid; gap: 12px; }
+    @media (min-width: 700px) { .stack { grid-template-columns: repeat(2, 1fr); } }
+    @media (min-width: 1000px) { .stack { grid-template-columns: repeat(3, 1fr); } }
+    .book {
+      background: #fffdf6; border: 1px solid #e0c9a8; border-radius: 2px;
+      box-shadow: 3px 4px 0 rgba(120,80,40,.12);
+      display: grid; grid-template-columns: 58px 1fr; overflow: hidden;
+    }
+    /* 背表紙 */
+    .spine {
+      background: linear-gradient(180deg, #d9480f, #9a3412);
+      color: #ffe9d6; display: grid; place-items: center; padding: 10px 0;
+    }
+    .spine span {
+      writing-mode: vertical-rl; font-family: "Shippori Mincho", serif;
+      font-size: 12px; letter-spacing: .16em;
+    }
+    .book.c2 .spine { background: linear-gradient(180deg, #0f766e, #115e59); }
+    .book.c3 .spine { background: linear-gradient(180deg, #7c3aed, #5b21b6); }
+    .book.c4 .spine { background: linear-gradient(180deg, #a16207, #713f12); }
+    .book.c5 .spine { background: linear-gradient(180deg, #be123c, #881337); }
+    .book.c6 .spine { background: linear-gradient(180deg, #1d4ed8, #1e3a8a); }
+    .book .inner { padding: 13px 14px 12px; min-width: 0; }
+    .book .cat { font-size: 11px; font-weight: 800; color: #c2410c; }
+    .book h3 {
+      font-family: "Shippori Mincho", serif; font-size: 16.5px; margin: 5px 0 6px;
+      line-height: 1.4;
+    }
+    .book p { margin: 0; font-size: 12.5px; line-height: 1.7; color: #6b5344; }
+    .book .tags { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 9px; }
+    .book .tags span {
+      font-size: 10.5px; background: #f5ead9; border: 1px solid #e0c9a8;
+      padding: 2px 6px; border-radius: 2px; color: #8a6a52;
+    }
+    .book .foot {
+      display: flex; justify-content: space-between; align-items: center;
+      margin-top: 10px; padding-top: 9px; border-top: 1px dashed #e0c9a8;
+      font-size: 11.5px; color: #8a6a52;
+    }
+    .book .foot .heart { color: #c2410c; font-weight: 800; }
+
+    /* 2カラム下部 */
+    .two { display: grid; gap: 20px; margin-top: 40px; }
+    @media (min-width: 900px) { .two { grid-template-columns: 1.3fr .7fr; } }
+
+    /* ランキング（番付） */
+    .rank { background: #fffdf6; border: 1px solid #e0c9a8; }
+    .rank li {
+      display: flex; align-items: center; gap: 12px;
+      padding: 11px 14px; border-bottom: 1px solid #f0e2cd; font-size: 14px;
+    }
+    .rank li:last-child { border-bottom: 0; }
+    .rank ol { list-style: none; margin: 0; padding: 0; }
+    .rank .no {
+      width: 26px; height: 26px; flex: none; display: grid; place-items: center;
+      background: #c2410c; color: #fff; font-size: 12px; font-weight: 800; border-radius: 2px;
+    }
+    .rank .no.g { background: #a16207; }
+    .rank .t { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 700; }
+    .rank .h { color: #c2410c; font-weight: 800; font-size: 13px; }
+
+    /* サイド */
+    .side-box { background: #fffdf6; border: 1px solid #e0c9a8; padding: 16px; margin-bottom: 14px; }
+    .side-box h3 { font-family: "Shippori Mincho", serif; margin: 0 0 10px; font-size: 16px; }
+    .tagcloud { display: flex; flex-wrap: wrap; gap: 6px; }
+    .tagcloud a {
+      text-decoration: none; font-size: 12px; color: #6b5344;
+      background: #f5ead9; border: 1px solid #e0c9a8; padding: 4px 8px;
+    }
+    .numbers { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
+    .numbers div { background: #f5ead9; padding: 10px 12px; }
+    .numbers b { display: block; font-size: 24px; font-family: "Shippori Mincho", serif; }
+    .numbers small { font-size: 11px; color: #8a6a52; }
+
+    /* 検索 */
+    .search-bar {
+      display: flex; gap: 8px; background: #fffdf6; border: 2px solid #c79a68;
+      padding: 8px; margin-top: 22px; flex-wrap: wrap;
+    }
+    .search-bar input { flex: 1; min-width: 180px; border: 0; outline: 0; font: inherit; padding: 10px 12px; background: transparent; }
+
+    .back { position: fixed; left: 16px; bottom: 16px; background: #3b2a22; color: #fff; text-decoration: none; padding: 8px 12px; border-radius: 999px; font-size: 12px; z-index: 40; }
+  </style>
+</head>
+<body>
+  <nav>
+    <div class="brand"><b>メグリミナル</b><small>まちの本屋の、平台みたいに</small></div>
+    <div class="nav-actions">
+      <a class="btn" href="#">ランキング</a>
+      <a class="btn" href="#">保存</a>
+      <a class="btn primary" href="#">おすすめを置く</a>
+      <a class="btn" href="#">ログイン</a>
+    </div>
+  </nav>
+
+  <div class="shelf-tabs">
+    <a class="on" href="#">すべての棚</a>
+    <a href="#">YouTube</a>
+    <a href="#">本・書籍</a>
+    <a href="#">映画</a>
+    <a href="#">音楽</a>
+    <a href="#">ゲーム</a>
+    <a href="#">グルメ</a>
+    <a href="#">アプリ</a>
+    <a href="#">まんが</a>
+  </div>
+
+  <main>
+    <section class="hirodai wood">
+      <article class="featured">
+        <div class="body">
+          <span class="kicker">今週の平台 · 店長おすすめ</span>
+          <h1>Cursor（AIコードエディタ）</h1>
+          <p class="lead">VSCodeベースのAI統合エディタ。プロンプト一つでコード生成・リファクタリングが可能。開発速度が劇的に上がりました。使いはじめて2週間、もう戻れません。</p>
+          <div class="credits">
+            <span>👨‍💻 Taro が置いた</span>
+            <span>アプリ › 開発ツール</span>
+            <span>2026/08/28</span>
+            <span>#しごと #AI #効率化</span>
+          </div>
+        </div>
+        <div class="obi">
+          <div>
+            <div class="catch">「もう手放せない」</div>
+            <div class="num">この1週間で ♥30 / 保存 12</div>
+          </div>
+          <a class="btn" href="#">立ち読みする →</a>
+        </div>
+      </article>
+
+      <div>
+        <div class="pop">
+          <div class="who">📌 Yuki のPOP</div>
+          <p>アルゴリズムのおすすめじゃなくて、<br />人が「これ good」って置いたやつだけ。</p>
+        </div>
+        <div class="pop alt">
+          <div class="who">📌 お店から</div>
+          <p>1つの大ジャンルにつき、週に1回だけ置けます。だから雑に置けない。</p>
+        </div>
+        <div class="pop">
+          <div class="who">📌 いま棚にあるもの</div>
+          <p><b style="font-size:20px;color:#c2410c">128</b> 件 / 書いてる人 <b>34</b> 人</p>
+        </div>
+      </div>
+    </section>
+
+    <div class="search-bar">
+      <input placeholder="タイトル、ジャンル、タグで棚を探す" />
+      <a class="btn primary" href="#">探す</a>
+      <a class="btn" href="#">くわしく絞る</a>
+    </div>
+
+    <div class="sec-head">
+      <h2>入荷したて</h2>
+      <span class="note">貼られた順。アルゴリズムなし</span>
+      <a href="#">すべて見る →</a>
+    </div>
+    <div class="stack">
+      <article class="book">
+        <div class="spine"><span>YouTube</span></div>
+        <div class="inner">
+          <div class="cat">YouTube › 教養</div>
+          <h3>ゆる言語学ラジオ</h3>
+          <p>言語学をテーマにした解説チャンネル。話し手2人のテンポが心地よく、通勤中に聞くのにちょうどいい。</p>
+          <div class="tags"><span>#ラジオ</span><span>#ことば</span><span>#ながら聞き</span></div>
+          <div class="foot"><span>👨‍💻 Taro · 08/26</span><span class="heart">♥ 15</span></div>
+        </div>
+      </article>
+      <article class="book c2">
+        <div class="spine"><span>アプリ</span></div>
+        <div class="inner">
+          <div class="cat">アプリ › 開発ツール</div>
+          <h3>Cursor（AIコードエディタ）</h3>
+          <p>プロンプト一つでコード生成。リファクタリングも会話で進むので、開発速度が劇的に上がりました。</p>
+          <div class="tags"><span>#しごと</span><span>#AI</span><span>#効率化</span></div>
+          <div class="foot"><span>👨‍💻 Taro · 08/28</span><span class="heart">♥ 30</span></div>
+        </div>
+      </article>
+      <article class="book c3">
+        <div class="spine"><span>本</span></div>
+        <div class="inner">
+          <div class="cat">本・書籍 › 小説</div>
+          <h3>「火花」— 又吉直樹</h3>
+          <p>笑いと切なさが交錯する世界観に引き込まれました。読み終わったあと、しばらく黙ってしまう類の本。</p>
+          <div class="tags"><span>#小説</span><span>#芥川賞</span></div>
+          <div class="foot"><span>📚 Yuki · 08/25</span><span class="heart">♥ 8</span></div>
+        </div>
+      </article>
+      <article class="book c4">
+        <div class="spine"><span>映画</span></div>
+        <div class="inner">
+          <div class="cat">映画 › SF</div>
+          <h3>インセプション</h3>
+          <p>何度観ても新しい発見があります。音響設計も完璧で、できれば良い環境で観てほしい一本。</p>
+          <div class="tags"><span>#SF</span><span>#ノーラン</span><span>#音響</span></div>
+          <div class="foot"><span>🎬 Jiro · 08/24</span><span class="heart">♥ 20</span></div>
+        </div>
+      </article>
+      <article class="book c5">
+        <div class="spine"><span>本</span></div>
+        <div class="inner">
+          <div class="cat">本・書籍 › SF</div>
+          <h3>「三体」— 劉慈欣</h3>
+          <p>スケールが圧倒的で、物理法則すら武器にするアイデアに震えます。1巻の折り返しから止まらない。</p>
+          <div class="tags"><span>#SF</span><span>#中国文学</span><span>#長編</span></div>
+          <div class="foot"><span>👩‍🎨 Hanako · 08/23</span><span class="heart">♥ 25</span></div>
+        </div>
+      </article>
+      <article class="book c6">
+        <div class="spine"><span>グルメ</span></div>
+        <div class="inner">
+          <div class="cat">YouTube › 料理</div>
+          <h3>リュウジのバズレシピ</h3>
+          <p>再現性が高く、材料も手に入りやすい時短シリーズ。平日夜のレパートリーが確実に増えます。</p>
+          <div class="tags"><span>#料理</span><span>#時短</span></div>
+          <div class="foot"><span>👩‍🎨 Hanako · 08/22</span><span class="heart">♥ 12</span></div>
+        </div>
+      </article>
+    </div>
+
+    <div class="two">
+      <div>
+        <div class="sec-head" style="margin-top:0">
+          <h2>今週の番付</h2>
+          <a href="#">すべて見る →</a>
+        </div>
+        <div class="rank">
+          <ol>
+            <li><span class="no">1</span><span class="t">Cursor（AIコードエディタ）</span><span class="h">♥ 30</span></li>
+            <li><span class="no">2</span><span class="t">「三体」— 劉慈欣</span><span class="h">♥ 25</span></li>
+            <li><span class="no">3</span><span class="t">インセプション</span><span class="h">♥ 20</span></li>
+            <li><span class="no g">4</span><span class="t">ゆる言語学ラジオ</span><span class="h">♥ 15</span></li>
+            <li><span class="no g">5</span><span class="t">リュウジのバズレシピ</span><span class="h">♥ 12</span></li>
+          </ol>
+        </div>
+      </div>
+      <div>
+        <div class="side-box">
+          <h3>タグの棚札</h3>
+          <div class="tagcloud">
+            <a href="#">#SF</a><a href="#">#しごと</a><a href="#">#AI</a><a href="#">#料理</a>
+            <a href="#">#小説</a><a href="#">#時短</a><a href="#">#ラジオ</a><a href="#">#音響</a>
+            <a href="#">#ことば</a><a href="#">#長編</a>
+          </div>
+        </div>
+        <div class="side-box">
+          <h3>いまの棚</h3>
+          <div class="numbers">
+            <div><b>128</b><small>件の投稿</small></div>
+            <div><b>842</b><small>♥ の数</small></div>
+            <div><b>34</b><small>人くらい</small></div>
+            <div><b>9</b><small>大ジャンル</small></div>
+          </div>
+        </div>
+        <div class="side-box">
+          <h3>このお店について</h3>
+          <p style="margin:0;font-size:13px;line-height:1.8;color:#6b5344">
+            SNSのアルゴリズムに疲れたあなたへ。純粋な「人のおすすめ」だけが置いてある棚です。
+          </p>
+        </div>
+      </div>
+    </div>
+  </main>
+  <a class="back" href="./index.html">← 案一覧</a>
+</body>
+</html>

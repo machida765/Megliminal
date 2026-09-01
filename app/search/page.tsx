@@ -75,11 +75,23 @@ function SearchPageInner() {
 
   useEffect(() => {
     const q = searchParams.get('q');
-    if (q) {
-      setDraft((prev) => ({ ...prev, query: q }));
-      setApplied((prev) => ({ ...prev, query: q }));
-      setExpanded(true);
-    }
+    const major = searchParams.get('major');
+    const tag = searchParams.get('tag');
+    if (!q && !major && !tag) return;
+
+    setDraft((prev) => ({
+      ...prev,
+      query: q ?? prev.query,
+      categoryId: major ?? prev.categoryId,
+      tagIds: tag ? [tag] : prev.tagIds,
+    }));
+    setApplied((prev) => ({
+      ...prev,
+      query: q ?? prev.query,
+      categoryId: major ?? prev.categoryId,
+      tagIds: tag ? [tag] : prev.tagIds,
+    }));
+    setExpanded(true);
   }, [searchParams]);
 
   const filteredPosts = useMemo(

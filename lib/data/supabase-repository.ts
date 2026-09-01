@@ -1,11 +1,7 @@
 import { createClient } from '@/lib/supabase/client';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { checkPostFrequency } from '@/lib/post-frequency';
-import {
-  countLikesForPost,
-  countLikesReceivedByUser,
-  countPostsForUser,
-} from '@/lib/ranking';
+import { getPeriodStart } from '@/lib/ranking';
 import type {
   CreatePostInput,
   DataRepository,
@@ -20,29 +16,59 @@ import {
   type SupabasePostRow,
 } from '@/lib/data/supabase-posts';
 import {
+  COMMENT_SELECT,
+  mapSupabaseComment,
+  type SupabaseCommentRow,
+} from '@/lib/data/supabase-comments';
+import {
+  categoryIdSchema,
+  commentBodySchema,
+  commentIdSchema,
   createPostSchema,
+  majorCategorySchema,
   postIdSchema,
+  reportDetailSchema,
+  reportReasonSchema,
   updatePostSchema,
   updateProfileSchema,
   userIdSchema,
 } from '@/lib/validation/data';
 import type {
   Bookmark,
+  Comment,
   Like,
   MajorCategory,
   Post,
   PostRankingEntry,
   Profile,
+  RankingPeriod,
   Report,
+  ReportReason,
   SubCategory,
   User,
   UserRankingEntry,
 } from '@/types';
 
-function notReady(): never {
-  throw new Error(
-    'この操作はまだ Supabase に接続していません。'
-  );
+type SupabaseReportRow = {
+  id: string;
+  post_id: string;
+  reporter_id: string;
+  reason: string;
+  detail: string | null;
+  status: string;
+  created_at: string;
+};
+
+function mapReportRow(row: SupabaseReportRow): Report {
+  return {
+    id: row.id,
+    postId: row.post_id,
+    reporterId: row.reporter_id,
+    reason: row.reason as ReportReason,
+    detail: row.detail ?? undefined,
+    createdAt: row.created_at,
+    status: row.status as Report['status'],
+  };
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -478,20 +504,150 @@ export class SupabaseDataRepository implements DataRepository {
     };
   }
 
-  async upsertMajorCategory(): Promise<MajorCategory> {
-    notReady();
+  async upsertMajorCategory(category: MajorCategory): Promise<MajorCategory> {
+    const validated = majorCategorySchema.parse(category);
+
+    const { data, error } = await this.client
+      .from('major_categories')
+      .upsert({
+        id: validated.id,
+        name: validated.name,
+        icon: validated.icon ?? null,
+        sort_order: validated.order,
+        is_active: validated.isActive,
+      })
+      .select('id, name, icon, sort_order, is_active')
+      .single();
+
+    if (error || !data) throw error ?? new Error('カテゴリの保存に失敗しました。');
+
+    return {
+      id: data.id,
+      name: data.name,
+      icon: data.icon ?? undefined,
+      order: data.sort_order,
+      isActive: data.is_active,
+    };
   }
 
-  async deleteMajorCategory(): Promise<void> {
-    notReady();
+  async deleteMajorCategory(id: string): Promise<void> {
+    const validatedId = categoryIdSchema.parse(id);
+
+    const { count, error: usageError } = await this.client
+      .from('posts')
+      .select('id', { count: 'exact', head: true })
+      .eq('major_category_id', validatedId);
+
+    if (usageError) throw usageError;
+    if ((count ?? 0) > 0) {
+      throw new Error('この大カテゴリには投稿があるため削除できません。');
+    }
+
+    const { error } = await this.client
+      .from('major_categories')
+      .delete()
+      .eq('id', validatedId);
+
+    if (error) throw error;
   }
 
-  async reorderMajorCategories(): Promise<MajorCategory[]> {
-    notReady();
+  async reorderMajorCategories(ids: string[]): Promise<MajorCategory[]> {
+    const validatedIds = ids.map((id) => categoryIdSchema.parse(id));
+
+    const { data: existing, error: fetchError } = await this.client
+      .from('major_categories')
+      .select('id, name, icon, is_active')
+      .in('id', validatedIds);
+
+    if (fetchError) throw fetchError;
+    if (!existing || existing.length !== validatedIds.length) {
+      throw new Error('並び替え対象のカテゴリが見つかりません。');
+    }
+
+    const byId = new Map(existing.map((row) => [row.id, row]));
+    const payload = validatedIds.map((id, index) => {
+      const row = byId.get(id)!;
+      return {
+        id: row.id,
+        name: row.name,
+        icon: row.icon,
+        is_active: row.is_active,
+        sort_order: index,
+      };
+    });
+
+    const { error } = await this.client.from('major_categories').upsert(payload);
+    if (error) throw error;
+
+    return this.getMajorCategories();
   }
 
-  async getComments() {
-    return [];
+  async getComments(postId: string): Promise<Comment[]> {
+    const { data, error } = await this.client
+      .from('comments')
+      .select(COMMENT_SELECT)
+      .eq('post_id', postId)
+      .order('created_at', { ascending: true });
+
+    if (error) {
+      console.warn('[supabase] getComments:', error.message);
+      return [];
+    }
+
+    return (data ?? []).map((row) => mapSupabaseComment(row as unknown as SupabaseCommentRow));
+  }
+
+  async addComment(userId: string, postId: string, body: string): Promise<Comment> {
+    await this.assertActingAs(userId);
+    const validatedPostId = postIdSchema.parse(postId);
+    const validatedBody = commentBodySchema.parse(body);
+
+    const { data, error } = await this.client
+      .from('comments')
+      .insert({
+        user_id: userId,
+        post_id: validatedPostId,
+        body: validatedBody,
+      })
+      .select(COMMENT_SELECT)
+      .single();
+
+    if (error || !data) throw error ?? new Error('コメントの投稿に失敗しました。');
+
+    return mapSupabaseComment(data as unknown as SupabaseCommentRow);
+  }
+
+  async updateComment(commentId: string, body: string): Promise<Comment> {
+    const validatedId = commentIdSchema.parse(commentId);
+    const validatedBody = commentBodySchema.parse(body);
+    const authenticatedUserId = await this.getAuthenticatedUserId();
+
+    const { data, error } = await this.client
+      .from('comments')
+      .update({ body: validatedBody })
+      .eq('id', validatedId)
+      .eq('user_id', authenticatedUserId)
+      .select(COMMENT_SELECT)
+      .single();
+
+    if (error || !data) {
+      throw error ?? new Error('このコメントを編集する権限がありません。');
+    }
+
+    return mapSupabaseComment(data as unknown as SupabaseCommentRow);
+  }
+
+  async deleteComment(commentId: string): Promise<void> {
+    const validatedId = commentIdSchema.parse(commentId);
+    await this.getAuthenticatedUserId();
+
+    // 本人以外は RLS が拒否する。admin は comments_delete_admin で許可される。
+    const { error } = await this.client
+      .from('comments')
+      .delete()
+      .eq('id', validatedId);
+
+    if (error) throw error;
   }
 
   async getLikes(postId?: string): Promise<Like[]> {
@@ -518,88 +674,369 @@ export class SupabaseDataRepository implements DataRepository {
     }));
   }
 
-  async getPostRankings(options: PostRankingOptions): Promise<PostRankingEntry[]> {
-    const { period, categoryId, limit = 20 } = options;
-    let posts = await this.getPosts();
-    const likes = await this.getLikes();
+  async isLiked(userId: string, postId: string): Promise<boolean> {
+    const { data, error } = await this.client
+      .from('likes')
+      .select('id')
+      .eq('user_id', userId)
+      .eq('post_id', postId)
+      .maybeSingle();
 
-    if (categoryId) {
-      posts = posts.filter((p) => p.majorCategoryId === categoryId);
+    if (error) return false;
+    return Boolean(data);
+  }
+
+  async getLikedPostIds(userId: string): Promise<string[]> {
+    const { data, error } = await this.client
+      .from('likes')
+      .select('post_id')
+      .eq('user_id', userId);
+
+    if (error) {
+      console.warn('[supabase] getLikedPostIds:', error.message);
+      return [];
     }
 
-    const ranked = posts
-      .map((post) => ({
+    return (data ?? []).map((row) => row.post_id as string);
+  }
+
+  async addLike(userId: string, postId: string): Promise<Like> {
+    await this.assertActingAs(userId);
+    const validatedPostId = postIdSchema.parse(postId);
+
+    const { data, error } = await this.client
+      .from('likes')
+      .upsert(
+        { user_id: userId, post_id: validatedPostId },
+        { onConflict: 'post_id,user_id', ignoreDuplicates: true }
+      )
+      .select('id, post_id, user_id, created_at')
+      .maybeSingle();
+
+    if (error) throw error;
+
+    if (data) {
+      return {
+        id: data.id,
+        postId: data.post_id,
+        userId: data.user_id,
+        createdAt: data.created_at,
+      };
+    }
+
+    // ignoreDuplicates で既存行のときは何も返らないため、改めて取得する
+    const { data: existing, error: existingError } = await this.client
+      .from('likes')
+      .select('id, post_id, user_id, created_at')
+      .eq('user_id', userId)
+      .eq('post_id', validatedPostId)
+      .single();
+
+    if (existingError || !existing) {
+      throw existingError ?? new Error('いいねに失敗しました。');
+    }
+
+    return {
+      id: existing.id,
+      postId: existing.post_id,
+      userId: existing.user_id,
+      createdAt: existing.created_at,
+    };
+  }
+
+  async removeLike(userId: string, postId: string): Promise<void> {
+    await this.assertActingAs(userId);
+    const validatedPostId = postIdSchema.parse(postId);
+
+    const { error } = await this.client
+      .from('likes')
+      .delete()
+      .eq('user_id', userId)
+      .eq('post_id', validatedPostId);
+
+    if (error) throw error;
+  }
+
+  /** 期間内のいいねを post_id ごとに数える。period='all' は null を返す。 */
+  private async countLikesSince(
+    period: RankingPeriod
+  ): Promise<Map<string, number> | null> {
+    const since = getPeriodStart(period);
+    if (!since) return null;
+
+    const { data, error } = await this.client
+      .from('likes')
+      .select('post_id')
+      .gte('created_at', since.toISOString());
+
+    if (error) {
+      console.warn('[supabase] countLikesSince:', error.message);
+      return new Map();
+    }
+
+    const counts = new Map<string, number>();
+    for (const row of data ?? []) {
+      const postId = row.post_id as string;
+      counts.set(postId, (counts.get(postId) ?? 0) + 1);
+    }
+    return counts;
+  }
+
+  async getPostRankings(options: PostRankingOptions): Promise<PostRankingEntry[]> {
+    const { period, categoryId, limit = 20 } = options;
+    const counts = await this.countLikesSince(period);
+
+    // 全期間は posts.like_count がトリガーで同期済みなので DB 側で並べる
+    if (!counts) {
+      const posts = await this.fetchPosts((q) => {
+        let query = q
+          .gt('like_count', 0)
+          .order('like_count', { ascending: false })
+          .limit(limit);
+        if (categoryId) query = query.eq('major_category_id', categoryId);
+        return query;
+      });
+
+      return posts.map((post, index) => ({
+        rank: index + 1,
         post,
-        likeCount: countLikesForPost(likes, post.id, period),
-      }))
+        likeCount: post.likeCount,
+      }));
+    }
+
+    const rankedIds = [...counts.entries()]
+      .sort((a, b) => b[1] - a[1])
+      .map(([postId]) => postId);
+
+    if (rankedIds.length === 0) return [];
+
+    // カテゴリ絞り込みで件数が減るぶん、多めに取ってから切り詰める
+    const candidateIds = rankedIds.slice(0, Math.max(limit * 3, limit));
+    const posts = await this.fetchPosts((q) => {
+      let query = q.in('id', candidateIds);
+      if (categoryId) query = query.eq('major_category_id', categoryId);
+      return query;
+    });
+
+    return posts
+      .map((post) => ({ post, likeCount: counts.get(post.id) ?? 0 }))
       .filter((item) => item.likeCount > 0)
       .sort((a, b) => b.likeCount - a.likeCount)
-      .slice(0, limit);
-
-    return ranked.map((item, index) => ({
-      rank: index + 1,
-      post: item.post,
-      likeCount: item.likeCount,
-    }));
+      .slice(0, limit)
+      .map((item, index) => ({
+        rank: index + 1,
+        post: item.post,
+        likeCount: item.likeCount,
+      }));
   }
 
   async getUserRankings(options: UserRankingOptions): Promise<UserRankingEntry[]> {
     const { period, sortBy, limit = 20 } = options;
-    const { data: profileRows, error } = await this.client
-      .from('profiles')
-      .select('id, name, avatar_url');
+    const since = getPeriodStart(period);
 
-    if (error) {
-      console.warn('[supabase] getUserRankings:', error.message);
+    const valueByUserId = new Map<string, number>();
+
+    if (sortBy === 'posts') {
+      let query = this.client.from('posts').select('user_id');
+      if (since) query = query.gte('created_at', since.toISOString());
+
+      const { data, error } = await query;
+      if (error) {
+        console.warn('[supabase] getUserRankings posts:', error.message);
+        return [];
+      }
+
+      for (const row of data ?? []) {
+        const userId = row.user_id as string;
+        valueByUserId.set(userId, (valueByUserId.get(userId) ?? 0) + 1);
+      }
+    } else {
+      const { data: postRows, error: postError } = await this.client
+        .from('posts')
+        .select('id, user_id');
+
+      if (postError) {
+        console.warn('[supabase] getUserRankings posts:', postError.message);
+        return [];
+      }
+
+      const authorByPostId = new Map(
+        (postRows ?? []).map((row) => [row.id as string, row.user_id as string])
+      );
+
+      let likeQuery = this.client.from('likes').select('post_id');
+      if (since) likeQuery = likeQuery.gte('created_at', since.toISOString());
+
+      const { data: likeRows, error: likeError } = await likeQuery;
+      if (likeError) {
+        console.warn('[supabase] getUserRankings likes:', likeError.message);
+        return [];
+      }
+
+      for (const row of likeRows ?? []) {
+        const authorId = authorByPostId.get(row.post_id as string);
+        if (!authorId) continue;
+        valueByUserId.set(authorId, (valueByUserId.get(authorId) ?? 0) + 1);
+      }
+    }
+
+    const rankedIds = [...valueByUserId.entries()]
+      .filter(([, value]) => value > 0)
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, limit)
+      .map(([userId]) => userId);
+
+    if (rankedIds.length === 0) return [];
+
+    const { data: profileRows, error: profileError } = await this.client
+      .from('profiles')
+      .select('id, name, avatar_url')
+      .in('id', rankedIds);
+
+    if (profileError) {
+      console.warn('[supabase] getUserRankings profiles:', profileError.message);
       return [];
     }
 
-    const users: User[] = (profileRows ?? []).map((row) => ({
-      id: row.id,
-      name: row.name,
-      avatarUrl: row.avatar_url ?? undefined,
-    }));
+    const userById = new Map<string, User>(
+      (profileRows ?? []).map((row) => [
+        row.id as string,
+        {
+          id: row.id as string,
+          name: row.name as string,
+          avatarUrl: (row.avatar_url as string | null) ?? undefined,
+        },
+      ])
+    );
 
-    const posts = await this.getPosts();
-    const likes = await this.getLikes();
-
-    const ranked = users
-      .map((user) => ({
+    return rankedIds
+      .map((userId) => userById.get(userId))
+      .filter((user): user is User => Boolean(user))
+      .map((user, index) => ({
+        rank: index + 1,
         user,
-        value:
-          sortBy === 'likes'
-            ? countLikesReceivedByUser(likes, posts, user.id, period)
-            : countPostsForUser(posts, user.id, period),
-      }))
-      .filter((item) => item.value > 0)
-      .sort((a, b) => b.value - a.value)
-      .slice(0, limit);
-
-    return ranked.map((item, index) => ({
-      rank: index + 1,
-      user: item.user,
-      value: item.value,
-    }));
+        value: valueByUserId.get(user.id) ?? 0,
+      }));
   }
 
-  async getBookmarks() {
-    return [];
+  async getBookmarks(userId: string): Promise<Post[]> {
+    const validatedUserId = userIdSchema.parse(userId);
+
+    const { data, error } = await this.client
+      .from('bookmarks')
+      .select('post_id')
+      .eq('user_id', validatedUserId)
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      console.warn('[supabase] getBookmarks:', error.message);
+      return [];
+    }
+
+    const postIds = (data ?? []).map((row) => row.post_id as string);
+    if (postIds.length === 0) return [];
+
+    const posts = await this.fetchPosts((q) => q.in('id', postIds));
+    const orderByPostId = new Map(postIds.map((id, index) => [id, index]));
+
+    return posts.sort(
+      (a, b) =>
+        (orderByPostId.get(a.id) ?? 0) - (orderByPostId.get(b.id) ?? 0)
+    );
   }
 
-  async isBookmarked() {
-    return false;
+  async isBookmarked(userId: string, postId: string): Promise<boolean> {
+    const { data, error } = await this.client
+      .from('bookmarks')
+      .select('id')
+      .eq('user_id', userId)
+      .eq('post_id', postId)
+      .maybeSingle();
+
+    if (error) return false;
+    return Boolean(data);
   }
 
-  async addBookmark(): Promise<Bookmark> {
-    notReady();
+  async addBookmark(userId: string, postId: string): Promise<Bookmark> {
+    await this.assertActingAs(userId);
+    const validatedPostId = postIdSchema.parse(postId);
+
+    const { error } = await this.client
+      .from('bookmarks')
+      .upsert(
+        { user_id: userId, post_id: validatedPostId },
+        { onConflict: 'user_id,post_id', ignoreDuplicates: true }
+      );
+
+    if (error) throw error;
+
+    const { data, error: fetchError } = await this.client
+      .from('bookmarks')
+      .select('id, user_id, post_id, created_at')
+      .eq('user_id', userId)
+      .eq('post_id', validatedPostId)
+      .single();
+
+    if (fetchError || !data) {
+      throw fetchError ?? new Error('保存に失敗しました。');
+    }
+
+    return {
+      id: data.id,
+      userId: data.user_id,
+      postId: data.post_id,
+      createdAt: data.created_at,
+    };
   }
 
-  async removeBookmark(): Promise<void> {
-    notReady();
+  async removeBookmark(userId: string, postId: string): Promise<void> {
+    await this.assertActingAs(userId);
+    const validatedPostId = postIdSchema.parse(postId);
+
+    const { error } = await this.client
+      .from('bookmarks')
+      .delete()
+      .eq('user_id', userId)
+      .eq('post_id', validatedPostId);
+
+    if (error) throw error;
   }
 
-  async reportPost(): Promise<Report> {
-    notReady();
+  async reportPost(
+    reporterId: string,
+    postId: string,
+    reason: ReportReason,
+    detail?: string
+  ): Promise<Report> {
+    await this.assertActingAs(reporterId);
+    const validatedPostId = postIdSchema.parse(postId);
+    const validatedReason = reportReasonSchema.parse(reason);
+    const validatedDetail = detail ? reportDetailSchema.parse(detail) : null;
+
+    const { error } = await this.client.from('reports').upsert(
+      {
+        reporter_id: reporterId,
+        post_id: validatedPostId,
+        reason: validatedReason,
+        detail: validatedDetail,
+      },
+      { onConflict: 'post_id,reporter_id' }
+    );
+
+    if (error) throw error;
+
+    const { data, error: fetchError } = await this.client
+      .from('reports')
+      .select('id, post_id, reporter_id, reason, detail, status, created_at')
+      .eq('post_id', validatedPostId)
+      .eq('reporter_id', reporterId)
+      .single();
+
+    if (fetchError || !data) {
+      throw fetchError ?? new Error('通報に失敗しました。');
+    }
+
+    return mapReportRow(data);
   }
 
   async hidePost(userId: string, postId: string) {
@@ -635,12 +1072,37 @@ export class SupabaseDataRepository implements DataRepository {
     return Boolean(data);
   }
 
-  async getReports(): Promise<Report[]> {
-    return [];
+  async getReports(status?: Report['status']): Promise<Report[]> {
+    let query = this.client
+      .from('reports')
+      .select('id, post_id, reporter_id, reason, detail, status, created_at')
+      .order('created_at', { ascending: false });
+
+    if (status) {
+      query = query.eq('status', status);
+    }
+
+    const { data, error } = await query;
+
+    if (error) {
+      console.warn('[supabase] getReports:', error.message);
+      return [];
+    }
+
+    return (data ?? []).map(mapReportRow);
   }
 
-  async resolveReports() {
-    notReady();
+  async resolveReports(postIds: string[]): Promise<void> {
+    if (postIds.length === 0) return;
+    const validatedIds = postIds.map((id) => postIdSchema.parse(id));
+
+    const { error } = await this.client
+      .from('reports')
+      .update({ status: 'resolved', resolved_at: new Date().toISOString() })
+      .in('post_id', validatedIds)
+      .eq('status', 'pending');
+
+    if (error) throw error;
   }
 }
 

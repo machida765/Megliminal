@@ -92,8 +92,17 @@ export interface DataRepository {
   upsertMajorCategory(category: MajorCategory): Promise<MajorCategory>;
   deleteMajorCategory(id: string): Promise<void>;
   reorderMajorCategories(ids: string[]): Promise<MajorCategory[]>;
+  // コメント
   getComments(postId: string): Promise<Comment[]>;
+  addComment(userId: string, postId: string, body: string): Promise<Comment>;
+  updateComment(commentId: string, body: string): Promise<Comment>;
+  deleteComment(commentId: string): Promise<void>;
+  // いいね
   getLikes(postId?: string): Promise<Like[]>;
+  isLiked(userId: string, postId: string): Promise<boolean>;
+  getLikedPostIds(userId: string): Promise<string[]>;
+  addLike(userId: string, postId: string): Promise<Like>;
+  removeLike(userId: string, postId: string): Promise<void>;
   // ランキング
   getPostRankings(options: PostRankingOptions): Promise<PostRankingEntry[]>;
   getUserRankings(options: UserRankingOptions): Promise<UserRankingEntry[]>;

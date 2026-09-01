@@ -5,6 +5,7 @@ import { use } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { PostDetail } from '@/components/post/PostDetail';
+import { CommentSection } from '@/components/post/CommentSection';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/components/providers/AuthProvider';
 import { useTranslations } from '@/components/providers/LocaleProvider';
@@ -59,6 +60,7 @@ export default function PostPage({ params }: PostPageProps) {
         onHidden={() => router.push('/')}
         onDeleted={() => router.push(user?.id ? `/profile/${user.id}` : '/')}
       />
+      <CommentSection postId={post.id} />
     </div>
   );
 }

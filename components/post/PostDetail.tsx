@@ -3,9 +3,10 @@
 import { useState } from 'react';
 import { Post, MajorCategory, SubCategory } from '@/types';
 import { Button } from '@/components/ui/button';
-import { ExternalLink, ArrowLeft, Heart, Trash2 } from 'lucide-react';
+import { ExternalLink, ArrowLeft, Trash2 } from 'lucide-react';
 import Link from 'next/link';
 import { BookmarkButton } from '@/components/post/BookmarkButton';
+import { LikeButton } from '@/components/post/LikeButton';
 import { PostModerationActions } from '@/components/moderation/PostModerationActions';
 import { useTranslations } from '@/components/providers/LocaleProvider';
 import { UserAvatar } from '@/components/user/UserAvatar';
@@ -123,9 +124,8 @@ export function PostDetail({
         <p className="text-base leading-relaxed text-[#4a372c] whitespace-pre-wrap mb-6">
           {post.description}
         </p>
-        <div className="flex items-center gap-2 text-[#c45c28] font-black mb-6">
-          <Heart className="w-5 h-5 fill-[#ef7d3b] text-[#ef7d3b]" />
-          {t('post.likes', { count: post.likeCount })}
+        <div className="mb-6">
+          <LikeButton postId={post.id} likeCount={post.likeCount} />
         </div>
         {safePostUrl && (
           <a
