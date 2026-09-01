@@ -1,8 +1,9 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import Link from 'next/link';
 import { Heart } from 'lucide-react';
+import { useQuery } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/components/providers/AuthProvider';
 import { useTranslations } from '@/components/providers/LocaleProvider';
@@ -20,31 +21,20 @@ export function LikeButton({ postId, likeCount, className }: LikeButtonProps) {
   const { t } = useTranslations();
   const { user } = useAuth();
   const invalidate = useInvalidate();
-  const [liked, setLiked] = useState(false);
-  const [count, setCount] = useState(likeCount);
   const [pending, setPending] = useState(false);
+  /** サーバー確定値より先に見せる暫定状態。反映が終わったら null に戻す。 */
+  const [optimisticLiked, setOptimisticLiked] = useState<boolean | null>(null);
 
-  useEffect(() => {
-    setCount(likeCount);
-  }, [likeCount]);
+  const { data: serverLiked = false, refetch } = useQuery({
+    queryKey: ['isLiked', postId, user?.id ?? null],
+    queryFn: () =>
+      user ? getRepository().isLiked(user.id, postId) : Promise.resolve(false),
+    enabled: Boolean(user),
+  });
 
-  useEffect(() => {
-    if (!user) {
-      setLiked(false);
-      return;
-    }
-
-    let cancelled = false;
-    getRepository()
-      .isLiked(user.id, postId)
-      .then((value) => {
-        if (!cancelled) setLiked(value);
-      });
-
-    return () => {
-      cancelled = true;
-    };
-  }, [user, postId]);
+  const liked = optimisticLiked ?? serverLiked;
+  const delta = liked === serverLiked ? 0 : liked ? 1 : -1;
+  const count = Math.max(likeCount + delta, 0);
 
   if (!user) {
     return (
@@ -60,8 +50,7 @@ export function LikeButton({ postId, likeCount, className }: LikeButtonProps) {
   const toggle = async () => {
     const nextLiked = !liked;
     setPending(true);
-    setLiked(nextLiked);
-    setCount((prev) => Math.max(prev + (nextLiked ? 1 : -1), 0));
+    setOptimisticLiked(nextLiked);
 
     try {
       const repo = getRepository();
@@ -71,10 +60,11 @@ export function LikeButton({ postId, likeCount, className }: LikeButtonProps) {
         await repo.removeLike(user.id, postId);
       }
       invalidate('posts', 'post', 'postsByUser', 'postRankings', 'userRankings');
+      await refetch();
     } catch {
-      setLiked(!nextLiked);
-      setCount((prev) => Math.max(prev + (nextLiked ? -1 : 1), 0));
+      // 失敗時はサーバー確定値に戻す
     } finally {
+      setOptimisticLiked(null);
       setPending(false);
     }
   };

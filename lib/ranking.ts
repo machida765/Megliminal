@@ -1,4 +1,4 @@
-import type { Like, Post, RankingPeriod, User } from '@/types';
+import type { Like, Post, RankingPeriod } from '@/types';
 
 export function getPeriodStart(period: RankingPeriod): Date | null {
   const now = new Date();

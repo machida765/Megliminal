@@ -1,7 +1,8 @@
 'use client';
 
 /** 管理 `/admin`。カテゴリ操作はこのファイル。通報タブは AdminModeration。 */
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { getRepository } from '@/lib/data';
 import { MajorCategory } from '@/types';
 import { AdminModeration } from '@/components/moderation/AdminModeration';
@@ -42,8 +43,14 @@ export default function AdminPage() {
   const { t } = useTranslations();
   const { user, profile, loading: authLoading } = useAuth();
   const [tab, setTab] = useState<'categories' | 'moderation'>('categories');
-  const [categories, setCategories] = useState<MajorCategory[]>([]);
-  const [loading, setLoading] = useState(true);
+  const {
+    data: categories = [],
+    isLoading: loading,
+    refetch,
+  } = useQuery<MajorCategory[]>({
+    queryKey: ['majorCategories', 'admin'],
+    queryFn: () => getRepository().getMajorCategories(),
+  });
   const [newName, setNewName] = useState('');
   const [newIcon, setNewIcon] = useState('Star');
   const [addError, setAddError] = useState('');
@@ -54,14 +61,8 @@ export default function AdminPage() {
     error instanceof Error && error.message ? error.message : fallback;
 
   const reload = async () => {
-    const data = await getRepository().getMajorCategories();
-    setCategories(data);
-    setLoading(false);
+    await refetch();
   };
-
-  useEffect(() => {
-    reload();
-  }, []);
 
   const handleAdd = async () => {
     const trimmed = newName.trim();
@@ -117,8 +118,8 @@ export default function AdminPage() {
     const ids = next.map((c) => c.id);
 
     try {
-      const reordered = await getRepository().reorderMajorCategories(ids);
-      setCategories(reordered);
+      await getRepository().reorderMajorCategories(ids);
+      await reload();
       setActionError('');
     } catch (error) {
       setActionError(toMessage(error, t('admin.categories.reorderFailed')));

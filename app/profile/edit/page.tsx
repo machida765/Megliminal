@@ -2,7 +2,7 @@
 
 /** プロフィール編集 `/profile/edit`。フォームはこのファイル。保存は updateUser。 */
 import Link from 'next/link';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { ArrowLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -21,13 +21,14 @@ export default function ProfileEditPage() {
   const [avatarUrl, setAvatarUrl] = useState('');
   const [saving, setSaving] = useState(false);
   const [status, setStatus] = useState<'idle' | 'saved' | 'error'>('idle');
+  const [loadedProfileId, setLoadedProfileId] = useState<string | null>(null);
 
-  useEffect(() => {
-    if (profile) {
-      setName(profile.name);
-      setAvatarUrl(profile.avatarUrl ?? '');
-    }
-  }, [profile]);
+  // プロフィールが読み込まれた（切り替わった）ときだけフォームを初期化する
+  if (profile && profile.id !== loadedProfileId) {
+    setLoadedProfileId(profile.id);
+    setName(profile.name);
+    setAvatarUrl(profile.avatarUrl ?? '');
+  }
 
   if (!user || !profile) {
     return (

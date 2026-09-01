@@ -10,6 +10,13 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run tests/unit",
+    "test:watch": "vitest tests/unit",
+    "test:integration": "vitest run tests/integration",
+    "test:coverage": "vitest run tests/unit --coverage",
+    "test:e2e": "playwright test",
+    "test:e2e:install": "playwright install --with-deps chromium",
     "audit": "npm audit --audit-level=high",
     "audit:prod": "npm audit --omit=dev --audit-level=high",
     "supabase:start": "npx supabase start",
@@ -37,13 +44,17 @@
   "devDependencies": {
     "@dicebear/core": "^10.6.1",
     "@dicebear/styles": "^10.5.0",
+    "@playwright/test": "^1.62.1",
     "@tailwindcss/postcss": "^4",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "@vitest/coverage-v8": "^4.1.11",
     "eslint": "^9",
     "eslint-config-next": "^16.3.2",
     "tailwindcss": "^4",
-    "typescript": "^5"
+    "typescript": "^5",
+    "undici": "^7.29.0",
+    "vitest": "^4.1.11"
   }
 }

@@ -1,0 +1,107 @@
+name: CI
+
+on:
+  push:
+    branches: [master, main]
+  pull_request:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  NODE_VERSION: '22'
+
+jobs:
+  static:
+    name: Lint / 型チェック / 単体テスト
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+
+      - run: npm ci
+
+      - name: Lint
+        run: npm run lint
+
+      - name: 型チェック
+        run: npm run typecheck
+
+      - name: 単体テスト
+        run: npm run test:coverage
+
+      - name: カバレッジを保存
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage
+          path: coverage
+          retention-days: 7
+
+  audit:
+    name: 依存関係の脆弱性チェック
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+
+      - run: npm ci
+
+      - name: 本番依存の audit
+        run: npm run audit:prod
+
+  supabase:
+    name: RLS 結合テスト / E2E
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+
+      - run: npm ci
+
+      - uses: supabase/setup-cli@v1
+        with:
+          version: latest
+
+      - name: ローカル Supabase を起動
+        run: supabase start
+
+      - name: 接続情報を環境変数へ
+        run: |
+          supabase status -o env \
+            --override-name api.url=NEXT_PUBLIC_SUPABASE_URL \
+            --override-name auth.anon_key=NEXT_PUBLIC_SUPABASE_ANON_KEY \
+            --override-name auth.service_role_key=SUPABASE_SERVICE_ROLE_KEY \
+            | grep -E '^(NEXT_PUBLIC_SUPABASE_URL|NEXT_PUBLIC_SUPABASE_ANON_KEY|SUPABASE_SERVICE_ROLE_KEY)=' \
+            | tr -d '"' >> "$GITHUB_ENV"
+
+      - name: RLS 結合テスト
+        run: npm run test:integration
+
+      - name: Playwright のブラウザを用意
+        run: npm run test:e2e:install
+
+      # 本番 CSP は http のローカル Supabase を許可しないため、E2E は dev サーバーで動かす
+      - name: E2E テスト
+        run: npm run test:e2e
+
+      - name: E2E レポートを保存
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: playwright-report
+          retention-days: 7

@@ -1,6 +1,6 @@
 'use client';
 
-import { Suspense, useState, useEffect } from 'react';
+import { Suspense, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
@@ -19,14 +19,13 @@ function LoginFormInner() {
   const { signInWithPassword } = useAuth();
   const redirectTo = getSafeRedirectPath(searchParams.get('redirect'));
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [errorMessage, setErrorMessage] = useState('');
+  const [submitError, setSubmitError] = useState('');
   const resetSuccess = searchParams.get('reset') === 'success';
-
-  useEffect(() => {
-    if (searchParams.get('error') === 'auth_callback') {
-      setErrorMessage(t('auth.errors.oauthCallback'));
-    }
-  }, [searchParams, t]);
+  const oauthError =
+    searchParams.get('error') === 'auth_callback'
+      ? t('auth.errors.oauthCallback')
+      : '';
+  const errorMessage = submitError || oauthError;
 
   const [formData, setFormData] = useState({
     email: '',
@@ -43,10 +42,10 @@ function LoginFormInner() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setErrorMessage('');
+    setSubmitError('');
 
     if (!formData.email || !formData.password) {
-      setErrorMessage(t('auth.login.errorRequired'));
+      setSubmitError(t('auth.login.errorRequired'));
       return;
     }
 
@@ -57,7 +56,7 @@ function LoginFormInner() {
     setIsSubmitting(false);
 
     if (result.error) {
-      setErrorMessage(result.error);
+      setSubmitError(result.error);
       return;
     }
 
@@ -73,7 +72,7 @@ function LoginFormInner() {
         </CardHeader>
 
         <CardContent>
-          <GoogleSignInButton onError={setErrorMessage} />
+          <GoogleSignInButton onError={setSubmitError} />
           <AuthDivider />
 
           {resetSuccess ? (

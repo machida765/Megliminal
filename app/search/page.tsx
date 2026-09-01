@@ -5,7 +5,7 @@
  * 投稿を一括取得し、条件は lib/search.ts でブラウザ側フィルタ。
  * 絞り込みは検索ボタン（または Enter）で確定。Suspense は useSearchParams（?q=）用。
  */
-import { Suspense, useState, useMemo, useEffect, type FormEvent } from 'react';
+import { Suspense, useState, useMemo, type FormEvent } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -72,27 +72,30 @@ function SearchPageInner() {
   const [draft, setDraft] = useState<SearchFilters>(defaultSearchFilters);
   const [applied, setApplied] = useState<SearchFilters>(defaultSearchFilters);
   const [expanded, setExpanded] = useState(false);
+  const [syncedQueryString, setSyncedQueryString] = useState<string | null>(null);
 
-  useEffect(() => {
+  // URL の検索条件が変わったら、フォームと適用中の条件に取り込む
+  const queryString = searchParams.toString();
+  if (queryString !== syncedQueryString) {
+    setSyncedQueryString(queryString);
+
     const q = searchParams.get('q');
     const major = searchParams.get('major');
     const tag = searchParams.get('tag');
-    if (!q && !major && !tag) return;
 
-    setDraft((prev) => ({
-      ...prev,
-      query: q ?? prev.query,
-      categoryId: major ?? prev.categoryId,
-      tagIds: tag ? [tag] : prev.tagIds,
-    }));
-    setApplied((prev) => ({
-      ...prev,
-      query: q ?? prev.query,
-      categoryId: major ?? prev.categoryId,
-      tagIds: tag ? [tag] : prev.tagIds,
-    }));
-    setExpanded(true);
-  }, [searchParams]);
+    if (q || major || tag) {
+      const fromUrl = (prev: SearchFilters): SearchFilters => ({
+        ...prev,
+        query: q ?? prev.query,
+        categoryId: major ?? prev.categoryId,
+        tagIds: tag ? [tag] : prev.tagIds,
+      });
+
+      setDraft(fromUrl);
+      setApplied(fromUrl);
+      setExpanded(true);
+    }
+  }
 
   const filteredPosts = useMemo(
     () => filterAndSortPosts(posts, applied),

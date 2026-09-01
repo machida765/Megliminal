@@ -49,7 +49,10 @@ export function HomePageClient({
   const [heroPost, setHeroPost] = useState<Post | null>(null);
   const [query, setQuery] = useState('');
 
+  // 抽選結果はサーバーとクライアントで一致しないため、
+  // マウント後にクライアント側だけで決める（初回描画は heroPost なし）。
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setHeroPost(
       pickRandomHero(heroCandidates, recentPosts[0] ?? popularPostsProp[0] ?? null)
     );

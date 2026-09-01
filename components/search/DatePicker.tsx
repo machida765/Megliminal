@@ -43,16 +43,18 @@ export function DatePicker({
   const [viewYear, setViewYear] = useState(initial.year);
   const [viewMonth, setViewMonth] = useState(initial.month);
 
-  useEffect(() => {
+  const [syncedValue, setSyncedValue] = useState(value ?? '');
+
+  // 外から value が変わったときだけ表示テキストと表示月を合わせる
+  if ((value ?? '') !== syncedValue) {
+    setSyncedValue(value ?? '');
     setText(value ? formatIsoAsSlash(value) : '');
-    if (value) {
-      const parts = parseIsoDate(value);
-      if (parts) {
-        setViewYear(parts.year);
-        setViewMonth(parts.month);
-      }
+    const parts = value ? parseIsoDate(value) : null;
+    if (parts) {
+      setViewYear(parts.year);
+      setViewMonth(parts.month);
     }
-  }, [value]);
+  }
 
   useEffect(() => {
     if (!open) return;
