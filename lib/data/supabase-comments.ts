@@ -1,10 +1,14 @@
 import type { Comment, User } from '@/types';
+import {
+  ANONYMOUS_AUTHOR_ID,
+  ANONYMOUS_AUTHOR_NAME,
+} from '@/lib/auth/public-board';
 
 /** Supabase comments 行 + 投稿者プロフィール */
 export type SupabaseCommentRow = {
   id: string;
   post_id: string;
-  user_id: string;
+  user_id: string | null;
   body: string;
   created_at: string;
   profiles: {
@@ -25,11 +29,16 @@ export const COMMENT_SELECT = `
 
 export function mapSupabaseComment(row: SupabaseCommentRow): Comment {
   const profile = row.profiles;
-  const user: User = {
-    id: profile?.id ?? row.user_id,
-    name: profile?.name ?? 'Unknown',
-    avatarUrl: profile?.avatar_url ?? undefined,
-  };
+  const user: User = row.user_id
+    ? {
+        id: profile?.id ?? row.user_id,
+        name: profile?.name ?? 'Unknown',
+        avatarUrl: profile?.avatar_url ?? undefined,
+      }
+    : {
+        id: ANONYMOUS_AUTHOR_ID,
+        name: ANONYMOUS_AUTHOR_NAME,
+      };
 
   return {
     id: row.id,

@@ -6,15 +6,21 @@ import { Bookmark } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/components/providers/AuthProvider';
 import { useTranslations } from '@/components/providers/LocaleProvider';
+import { PUBLIC_BOARD } from '@/lib/auth/public-board';
 import { getRepository } from '@/lib/data';
 import { useInvalidate } from '@/lib/data/hooks';
 
 interface BookmarkButtonProps {
   postId: string;
   className?: string;
+  loginRedirect?: string;
 }
 
-export function BookmarkButton({ postId, className }: BookmarkButtonProps) {
+export function BookmarkButton({
+  postId,
+  className,
+  loginRedirect,
+}: BookmarkButtonProps) {
   const { t } = useTranslations();
   const { user } = useAuth();
   const invalidate = useInvalidate();
@@ -29,9 +35,10 @@ export function BookmarkButton({ postId, className }: BookmarkButtonProps) {
   }, [user, postId]);
 
   if (!user) {
+    if (PUBLIC_BOARD) return null;
     return (
       <Button asChild variant="outline" size="sm" className={className}>
-        <Link href={`/login?redirect=/post/${postId}`}>
+        <Link href={`/login?redirect=${encodeURIComponent(loginRedirect ?? `/post/${postId}`)}`}>
           <Bookmark className="w-4 h-4" />
           {t('post.bookmark')}
         </Link>

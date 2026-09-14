@@ -1,9 +1,13 @@
 import type { Post, User } from '@/types';
+import {
+  ANONYMOUS_AUTHOR_ID,
+  ANONYMOUS_AUTHOR_NAME,
+} from '@/lib/auth/public-board';
 
 /** Supabase posts 行 + リレーション */
 export type SupabasePostRow = {
   id: string;
-  user_id: string;
+  user_id: string | null;
   major_category_id: string;
   sub_category_id: string | null;
   title: string;
@@ -35,11 +39,16 @@ export const POST_SELECT = `
 
 export function mapSupabasePost(row: SupabasePostRow): Post {
   const profile = row.profiles;
-  const user: User = {
-    id: profile?.id ?? row.user_id,
-    name: profile?.name ?? 'Unknown',
-    avatarUrl: profile?.avatar_url ?? undefined,
-  };
+  const user: User = row.user_id
+    ? {
+        id: profile?.id ?? row.user_id,
+        name: profile?.name ?? 'Unknown',
+        avatarUrl: profile?.avatar_url ?? undefined,
+      }
+    : {
+        id: ANONYMOUS_AUTHOR_ID,
+        name: ANONYMOUS_AUTHOR_NAME,
+      };
 
   return {
     id: row.id,

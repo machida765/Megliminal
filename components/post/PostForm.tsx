@@ -11,6 +11,7 @@ import { CategoryPicker } from '@/components/search/CategoryPicker';
 import { getRepository } from '@/lib/data';
 import { useAuth } from '@/components/providers/AuthProvider';
 import { useTranslations } from '@/components/providers/LocaleProvider';
+import { PUBLIC_BOARD } from '@/lib/auth/public-board';
 import { useInvalidate, useMajorCategories, useSubCategories } from '@/lib/data/hooks';
 
 interface PostFormProps {
@@ -52,14 +53,16 @@ export function PostForm({ initialPost, onSubmit }: PostFormProps) {
     }
 
     if (!user) {
-      alert(t('auth.errors.loginRequired'));
-      router.push('/login?redirect=/create');
-      return;
+      if (!PUBLIC_BOARD) {
+        alert(t('auth.errors.loginRequired'));
+        router.push('/login?redirect=/create');
+        return;
+      }
     }
 
     const repo = getRepository();
 
-    if (!isEdit) {
+    if (!isEdit && user) {
       const frequency = await repo.checkPostFrequency(
         user.id,
         formData.majorCategoryId
@@ -89,7 +92,7 @@ export function PostForm({ initialPost, onSubmit }: PostFormProps) {
         router.push(`/post/${updated.id}`);
       } else {
         const newPost = await repo.createPost({
-          userId: user.id,
+          userId: user?.id,
           majorCategoryId: formData.majorCategoryId,
           subCategoryId: formData.subCategoryId,
           title: formData.title,
@@ -196,11 +199,11 @@ export function PostForm({ initialPost, onSubmit }: PostFormProps) {
             </Button>
           </div>
 
-          {!isEdit && (
-            <div className="paper-note bg-[#fff7d6] p-4 rotate-1">
-              <p className="text-sm text-[#6a5344]">{t('post.frequencyNote')}</p>
+          {!isEdit && user ? (
+            <div className="rounded-[14px] border border-line bg-soft/40 p-4">
+              <p className="text-sm text-quiet">{t('post.frequencyNote')}</p>
             </div>
-          )}
+          ) : null}
         </form>
       </CardContent>
     </Card>

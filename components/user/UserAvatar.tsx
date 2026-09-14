@@ -2,6 +2,7 @@ import {
   isImageAvatar,
   resolveAvatarUrl,
 } from '@/lib/avatars';
+import { SHOW_USER_IDENTITY } from '@/lib/auth/public-board';
 import { cn } from '@/lib/utils';
 
 type UserAvatarProps = {
@@ -21,6 +22,8 @@ export function UserAvatar({
   imageClassName,
   fallbackClassName,
 }: UserAvatarProps) {
+  if (!SHOW_USER_IDENTITY) return null;
+
   const resolved = resolveAvatarUrl(avatarUrl, userId);
 
   if (isImageAvatar(resolved)) {
@@ -29,7 +32,7 @@ export function UserAvatar({
         src={resolved}
         alt={name ? `${name}のアイコン` : ''}
         className={cn(
-          'rounded-full object-cover bg-[#faf4eb] shrink-0',
+          'rounded-full object-cover bg-soft/40 shrink-0',
           className,
           imageClassName
         )}

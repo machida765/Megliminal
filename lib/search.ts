@@ -1,4 +1,5 @@
 import { isWithinPeriod } from '@/lib/ranking';
+import { SHOW_USER_IDENTITY } from '@/lib/auth/public-board';
 import { getSearchSortLabels } from '@/lib/i18n/labels';
 import type { Post, RankingPeriod } from '@/types';
 
@@ -43,7 +44,7 @@ export function filterAndSortPosts(posts: Post[], filters: SearchFilters): Post[
       post.title.toLowerCase().includes(q) ||
       (post.description ?? '').toLowerCase().includes(q) ||
       (post.url ?? '').toLowerCase().includes(q) ||
-      post.user.name.toLowerCase().includes(q);
+      (SHOW_USER_IDENTITY && post.user.name.toLowerCase().includes(q));
 
     const matchesCategory = (() => {
       if (filters.subCategoryId) {

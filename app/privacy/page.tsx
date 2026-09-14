@@ -15,8 +15,8 @@ export const metadata: Metadata = {
 export default function PrivacyPage() {
   return (
     <LegalPageShell title={messages.legal.privacy} backLabel={messages.common.backToHome}>
-      <p className="text-xs text-[#b56a38] -mt-4 mb-2">最終更新: {PRIVACY_LAST_UPDATED}</p>
-      <p className="text-[#6a5344] text-sm">
+      <p className="text-xs text-brand -mt-4 mb-2">最終更新: {PRIVACY_LAST_UPDATED}</p>
+      <p className="text-quiet text-sm">
         本ページはドラフトです。本番公開前に内容を確認・必要に応じて法律専門家へご相談ください。
       </p>
       {PRIVACY_SECTIONS.map((section) => (

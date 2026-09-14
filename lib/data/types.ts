@@ -18,7 +18,7 @@ import type {
 import type { PostFrequencyCheck } from '@/types';
 
 export type CreatePostInput = {
-  userId: string;
+  userId?: string | null;
   majorCategoryId: string;
   subCategoryId?: string | null;
   tagIds?: string[];
@@ -94,14 +94,14 @@ export interface DataRepository {
   reorderMajorCategories(ids: string[]): Promise<MajorCategory[]>;
   // コメント
   getComments(postId: string): Promise<Comment[]>;
-  addComment(userId: string, postId: string, body: string): Promise<Comment>;
+  addComment(userId: string | null, postId: string, body: string): Promise<Comment>;
   updateComment(commentId: string, body: string): Promise<Comment>;
   deleteComment(commentId: string): Promise<void>;
   // いいね
   getLikes(postId?: string): Promise<Like[]>;
   isLiked(userId: string, postId: string): Promise<boolean>;
   getLikedPostIds(userId: string): Promise<string[]>;
-  addLike(userId: string, postId: string): Promise<Like>;
+  addLike(userId: string | null, postId: string): Promise<Like>;
   removeLike(userId: string, postId: string): Promise<void>;
   // ランキング
   getPostRankings(options: PostRankingOptions): Promise<PostRankingEntry[]>;
@@ -113,10 +113,10 @@ export interface DataRepository {
   removeBookmark(userId: string, postId: string): Promise<void>;
   // モデレーション
   reportPost(
-    reporterId: string,
     postId: string,
     reason: ReportReason,
-    detail?: string
+    detail?: string,
+    reporter?: { userId: string } | { key: string }
   ): Promise<Report>;
   hidePost(userId: string, postId: string): Promise<void>;
   unhidePost(userId: string, postId: string): Promise<void>;

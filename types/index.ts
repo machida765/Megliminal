@@ -45,7 +45,7 @@ export type Profile = User & {
 
 export type Post = {
   id: string;
-  userId: string;
+  userId: string | null;
   user: User;
   majorCategoryId: string;
   subCategoryId?: string | null;
@@ -60,14 +60,14 @@ export type Post = {
 export type Like = {
   id: string;
   postId: string;
-  userId: string;
+  userId: string | null;
   createdAt: string;
 };
 
 export type Comment = {
   id: string;
   postId: string;
-  userId: string;
+  userId: string | null;
   user: User;
   body: string;
   createdAt: string;
@@ -119,7 +119,8 @@ export type ReportReason =
 export type Report = {
   id: string;
   postId: string;
-  reporterId: string;
+  reporterId?: string;
+  reporterKey?: string;
   reason: ReportReason;
   detail?: string;
   createdAt: string;

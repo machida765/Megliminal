@@ -32,6 +32,7 @@ import {
 import { type Tag } from '@/types';
 import { getMessages } from '@/messages';
 import { DEFAULT_LOCALE } from '@/lib/i18n/config';
+import { PageHeader } from '@/components/layout/PageHeader';
 import { Minus, Plus, Search, X } from 'lucide-react';
 
 function hasAdvancedFilters(filters: SearchFilters): boolean {
@@ -55,7 +56,7 @@ export default function SearchPage() {
 
 function SearchPageFallback() {
   return (
-    <div className="px-4 py-20 text-center text-[#8a6a52]">
+    <div className="px-4 py-20 text-center text-quiet">
       {getMessages(DEFAULT_LOCALE).common.loading}
     </div>
   );
@@ -155,10 +156,12 @@ function SearchPageInner() {
 
   return (
     <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-      <header className="mb-5">
-        <h1 className="text-2xl sm:text-3xl font-black text-[#3b2a22] mb-1">{t('search.title')}</h1>
-        <p className="text-sm text-[#6a5344]">{t('search.description')}</p>
-      </header>
+      <PageHeader
+        kicker={t('search.kicker')}
+        title={t('search.title')}
+        description={t('search.description')}
+        icon={<Search className="w-3.5 h-3.5" />}
+      />
 
       <form onSubmit={runSearch} className="func-surface p-4 mb-4 space-y-4">
         <CategoryPicker
@@ -183,7 +186,7 @@ function SearchPageInner() {
         <button
           type="button"
           onClick={toggleExpanded}
-          className="inline-flex items-center gap-1.5 text-sm font-bold text-[#c45c28] hover:text-[#a34a20]"
+          className="inline-flex items-center gap-1.5 text-sm font-bold text-brand hover:text-brand"
         >
           {expanded ? (
             <>
@@ -195,7 +198,7 @@ function SearchPageInner() {
               <Plus className="w-4 h-4" />
               {t('search.advancedOpen')}
               {hasAdvancedFilters(draft) && (
-                <span className="text-xs font-normal text-[#8a6a52]">
+                <span className="text-xs font-normal text-quiet">
                   {t('search.advancedActive')}
                 </span>
               )}
@@ -204,9 +207,9 @@ function SearchPageInner() {
         </button>
 
         {expanded && (
-          <div className="space-y-4 pt-3 border-t border-[#efe3d2]">
+          <div className="space-y-4 pt-3 border-t border-line">
             <div>
-              <p className="text-xs font-bold text-[#8a6a52] mb-2">{t('search.keyword')}</p>
+              <p className="text-xs font-bold text-quiet mb-2">{t('search.keyword')}</p>
               <Input
                 type="text"
                 placeholder={t('search.keywordPlaceholder')}
@@ -226,7 +229,7 @@ function SearchPageInner() {
             />
 
             <div>
-              <p className="text-xs font-bold text-[#8a6a52] mb-2">{t('search.postedAt')}</p>
+              <p className="text-xs font-bold text-quiet mb-2">{t('search.postedAt')}</p>
               <SearchPeriodFilter
                 period={draft.period}
                 dateFrom={draft.dateFrom}
@@ -240,7 +243,7 @@ function SearchPageInner() {
         )}
 
         <div className="flex justify-end">
-          <Button type="submit" variant="flat" className="gap-2 min-w-32">
+          <Button type="submit" variant="flat" className="gap-2 w-full sm:w-auto sm:min-w-32">
             <Search className="w-4 h-4" />
             {t('search.submit')}
           </Button>
@@ -248,7 +251,7 @@ function SearchPageInner() {
       </form>
 
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-4">
-        <p className="text-sm text-[#6a5344] tabular">
+        <p className="text-sm text-quiet tabular">
           {loading
             ? '...'
             : t('search.resultCount', { count: filteredPosts.length })}
@@ -264,12 +267,12 @@ function SearchPageInner() {
           )}
         </p>
         <div className="flex items-center gap-2">
-          <span className="text-xs font-bold text-[#8a6a52] shrink-0">{t('common.sort')}</span>
+          <span className="text-xs font-bold text-quiet shrink-0">{t('common.sort')}</span>
           <Select
             value={applied.sort}
             onValueChange={(v) => patchApplied({ sort: (v ?? 'newest') as SearchSort })}
           >
-            <SelectTrigger className="w-full sm:w-48 bg-white border-[#e4d2b8]">
+            <SelectTrigger className="w-full sm:w-48 bg-white border-line">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -329,7 +332,7 @@ function SearchPageInner() {
             )
           )}
           {applied.sort !== 'newest' && (
-            <span className="text-xs text-[#8a6a52]">
+            <span className="text-xs text-quiet">
               {messages.search.sort[applied.sort]}
             </span>
           )}
@@ -337,7 +340,7 @@ function SearchPageInner() {
             <button
               type="button"
               onClick={resetFilters}
-              className="text-xs font-bold text-[#c45c28] ml-1"
+              className="text-xs font-bold text-brand ml-1"
             >
               {t('common.clearFilters')}
             </button>
@@ -345,7 +348,7 @@ function SearchPageInner() {
         </div>
       )}
 
-      <div className="grid grid-cols-2 gap-3 sm:gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
         {!loading && filteredPosts.length > 0 ? (
           filteredPosts.map((post) => (
             <PostCard
@@ -358,7 +361,7 @@ function SearchPageInner() {
           ))
         ) : (
           <div className="col-span-full func-surface p-10 text-center">
-            <p className="text-[#6a5344] mb-3">
+            <p className="text-quiet mb-3">
               {loading ? t('common.loading') : t('search.noResults')}
             </p>
             {!loading && hasExtraFilters && (
@@ -394,7 +397,7 @@ function TagPicker({
   return (
     <div>
       <div className="flex flex-wrap items-center justify-between gap-2 mb-2">
-        <p className="text-xs font-bold text-[#8a6a52]">{labels.tags}</p>
+        <p className="text-xs font-bold text-quiet">{labels.tags}</p>
         {onMatchChange && match && (
           <div className="flex gap-1">
             <Button
@@ -428,8 +431,8 @@ function TagPicker({
                 onClick={() => onToggle(tag.id)}
                 className={`text-sm px-3 py-1 border ${
                   on
-                    ? 'bg-[#3b2a22] text-[#fff7d6] border-[#3b2a22]'
-                    : 'bg-white text-[#3b2a22] border-[#e4d2b8] hover:bg-[#fff6ea]'
+                    ? 'bg-ink text-brand-ink border-ink'
+                    : 'bg-surface text-ink border-line hover:bg-soft/50'
                 }`}
               >
                 #{tag.name}
@@ -452,7 +455,7 @@ function FilterChip({
     <button
       type="button"
       onClick={onRemove}
-      className="inline-flex items-center gap-1 text-xs font-bold bg-[#f4ece0] text-[#3b2a22] px-2 py-1"
+      className="inline-flex items-center gap-1 text-xs font-bold bg-soft text-ink px-2 py-1"
     >
       {label}
       <X className="w-3 h-3" />

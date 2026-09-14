@@ -32,6 +32,11 @@ describe('createPostSchema', () => {
     expect(parsed.title).toBe('余白あり');
   });
 
+  it('userId がなくても通る（匿名掲示板）', () => {
+    const { userId: _userId, ...withoutUser } = validPost;
+    expect(createPostSchema.safeParse(withoutUser).success).toBe(true);
+  });
+
   it('userId が UUID でなければ弾く', () => {
     expect(createPostSchema.safeParse({ ...validPost, userId: 'not-uuid' }).success).toBe(
       false

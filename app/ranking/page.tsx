@@ -1,6 +1,6 @@
 'use client';
 
-/** ランキング `/ranking`。タブ: 投稿 / ジャンル / ユーザー。UI はこのファイル。 */
+/** ランキング `/ranking`。タブ: 投稿 / ジャンル。ユーザー別は SHOW_USER_IDENTITY 時のみ。 */
 import { useState } from 'react';
 import Link from 'next/link';
 import { Trophy, Heart, Users, Medal } from 'lucide-react';
@@ -20,6 +20,8 @@ import {
 } from '@/lib/data/hooks';
 import { useTranslations } from '@/components/providers/LocaleProvider';
 import { UserAvatar } from '@/components/user/UserAvatar';
+import { PageHeader } from '@/components/layout/PageHeader';
+import { SHOW_USER_IDENTITY } from '@/lib/auth/public-board';
 import { type RankingPeriod } from '@/types';
 
 type RankingTab = 'posts' | 'genre' | 'users';
@@ -33,7 +35,8 @@ export default function RankingPage() {
   const [userSort, setUserSort] = useState<UserSort>('likes');
 
   const { categories } = useMajorCategories();
-  const activeCategoryId = tab === 'genre' ? categoryId : undefined;
+  const activeTab = tab === 'users' && !SHOW_USER_IDENTITY ? 'posts' : tab;
+  const activeCategoryId = activeTab === 'genre' ? categoryId : undefined;
   const { entries: postEntries, loading: postsLoading } = usePostRankings(
     period,
     activeCategoryId
@@ -48,30 +51,30 @@ export default function RankingPage() {
   const tabs: { id: RankingTab; label: string; icon: React.ReactNode }[] = [
     { id: 'posts', label: t('ranking.tabs.posts'), icon: <Trophy className="w-4 h-4" /> },
     { id: 'genre', label: t('ranking.tabs.genre'), icon: <Medal className="w-4 h-4" /> },
-    { id: 'users', label: t('ranking.tabs.users'), icon: <Users className="w-4 h-4" /> },
+    ...(SHOW_USER_IDENTITY
+      ? [{ id: 'users' as const, label: t('ranking.tabs.users'), icon: <Users className="w-4 h-4" /> }]
+      : []),
   ];
 
   const selectedCategory = categories.find((c) => c.id === categoryId);
 
   return (
     <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-      <header className="mb-6">
-        <h1 className="text-2xl sm:text-3xl font-black text-[#3b2a22] mb-1">
-          {t('ranking.title')}
-        </h1>
-        <p className="text-sm text-[#6a5344]">
-          {t('ranking.likesSortNote', { period: periodLabel })}
-        </p>
-      </header>
+      <PageHeader
+        kicker={t('ranking.kicker')}
+        title={t('ranking.title')}
+        description={t('ranking.likesSortNote', { period: periodLabel })}
+        icon={<Trophy className="w-3.5 h-3.5" />}
+      />
 
-      <div className="func-surface p-3 sm:p-4 mb-4 sticky top-[60px] z-20">
+      <div className="func-surface p-3 sm:p-4 mb-4 sticky top-14 md:top-[80px] z-20">
         <div className="flex flex-wrap gap-2 mb-3">
           {tabs.map((tabItem) => (
             <Button
               key={tabItem.id}
               type="button"
               size="sm"
-              variant={tab === tabItem.id ? 'flat' : 'flat-outline'}
+              variant={activeTab === tabItem.id ? 'flat' : 'flat-outline'}
               className="gap-2"
               onClick={() => setTab(tabItem.id)}
             >
@@ -83,9 +86,9 @@ export default function RankingPage() {
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
           <PeriodFilter value={period} onChange={setPeriod} />
 
-          {tab === 'genre' && (
+          {activeTab === 'genre' && (
             <Select value={categoryId} onValueChange={(v) => setCategoryId(v ?? '')}>
-              <SelectTrigger className="w-full sm:w-56 bg-white border-[#e4d2b8]">
+              <SelectTrigger className="w-full sm:w-56 bg-surface border-line">
                 <SelectValue placeholder={t('ranking.selectGenre')}>
                   {selectedCategory?.name}
                 </SelectValue>
@@ -102,7 +105,7 @@ export default function RankingPage() {
             </Select>
           )}
 
-          {tab === 'users' && (
+          {SHOW_USER_IDENTITY && activeTab === 'users' && (
             <div className="flex gap-2">
               <Button
                 type="button"
@@ -125,17 +128,17 @@ export default function RankingPage() {
         </div>
       </div>
 
-      {(tab === 'posts' || tab === 'genre') && (
+      {(activeTab === 'posts' || activeTab === 'genre') && (
         <section className="func-surface overflow-hidden">
-          <div className="hidden sm:flex items-center gap-3 px-4 py-2 text-[11px] font-bold tracking-wide text-[#8a6a52] border-b border-[#efe3d2] bg-[#faf4eb]">
+          <div className="hidden sm:flex items-center gap-3 px-4 py-2 text-[11px] font-bold tracking-wide text-quiet border-b border-line bg-soft/40">
             <span className="w-10">{t('ranking.table.rank')}</span>
             <span className="flex-1">{t('ranking.table.post')}</span>
             <span className="w-16 text-right">{t('ranking.table.likes')}</span>
           </div>
           {postsLoading ? (
-            <p className="text-center text-[#8a6a52] py-12">{t('common.loading')}</p>
+            <p className="text-center text-quiet py-12">{t('common.loading')}</p>
           ) : postEntries.length === 0 ? (
-            <p className="text-center text-[#8a6a52] py-12">{t('ranking.noData')}</p>
+            <p className="text-center text-quiet py-12">{t('ranking.noData')}</p>
           ) : (
             <ol>
               {postEntries.map((entry) => (
@@ -144,24 +147,26 @@ export default function RankingPage() {
                     <span
                       className={`tabular w-10 h-10 flex-shrink-0 flex items-center justify-center font-black text-lg rounded-md ${
                         entry.rank === 1
-                          ? 'bg-[#3b2a22] text-[#fff7d6]'
+                          ? 'bg-ink text-brand-ink'
                           : entry.rank <= 3
-                            ? 'bg-[#ef7d3b] text-white'
-                            : 'bg-[#f4ece0] text-[#3b2a22]'
+                            ? 'bg-brand text-brand-ink'
+                            : 'bg-soft text-ink'
                       }`}
                     >
                       {entry.rank}
                     </span>
                     <div className="flex-1 min-w-0">
-                      <p className="font-bold text-[#3b2a22] truncate">
+                      <p className="font-bold text-ink truncate">
                         {entry.post.title}
                       </p>
-                      <p className="text-sm text-[#8a6a52] truncate">
-                        {entry.post.user.name}
-                      </p>
+                      {SHOW_USER_IDENTITY ? (
+                        <p className="text-sm text-quiet truncate">
+                          {entry.post.user.name}
+                        </p>
+                      ) : null}
                     </div>
-                    <span className="tabular flex items-center gap-1 font-bold text-[#c45c28] flex-shrink-0 w-16 justify-end">
-                      <Heart className="w-4 h-4 fill-[#ef7d3b] text-[#ef7d3b]" />
+                    <span className="tabular flex items-center gap-1 font-bold text-brand flex-shrink-0 w-16 justify-end">
+                      <Heart className="w-4 h-4 fill-brand text-brand" />
                       {entry.likeCount}
                     </span>
                   </Link>
@@ -172,9 +177,9 @@ export default function RankingPage() {
         </section>
       )}
 
-      {tab === 'users' && (
+      {SHOW_USER_IDENTITY && activeTab === 'users' && (
         <section className="func-surface overflow-hidden">
-          <div className="hidden sm:flex items-center gap-3 px-4 py-2 text-[11px] font-bold tracking-wide text-[#8a6a52] border-b border-[#efe3d2] bg-[#faf4eb]">
+          <div className="hidden sm:flex items-center gap-3 px-4 py-2 text-[11px] font-bold tracking-wide text-quiet border-b border-line bg-soft/40">
             <span className="w-10">{t('ranking.table.rank')}</span>
             <span className="flex-1">{t('ranking.table.user')}</span>
             <span className="w-20 text-right">
@@ -184,9 +189,9 @@ export default function RankingPage() {
             </span>
           </div>
           {usersLoading ? (
-            <p className="text-center text-[#8a6a52] py-12">{t('common.loading')}</p>
+            <p className="text-center text-quiet py-12">{t('common.loading')}</p>
           ) : userEntries.length === 0 ? (
-            <p className="text-center text-[#8a6a52] py-12">{t('ranking.noData')}</p>
+            <p className="text-center text-quiet py-12">{t('ranking.noData')}</p>
           ) : (
             <ol>
               {userEntries.map((entry) => (
@@ -195,10 +200,10 @@ export default function RankingPage() {
                     <span
                       className={`tabular w-10 h-10 flex-shrink-0 flex items-center justify-center font-black text-lg rounded-md ${
                         entry.rank === 1
-                          ? 'bg-[#3b2a22] text-[#fff7d6]'
+                          ? 'bg-ink text-brand-ink'
                           : entry.rank <= 3
-                            ? 'bg-[#ef7d3b] text-white'
-                            : 'bg-[#f4ece0] text-[#3b2a22]'
+                            ? 'bg-brand text-brand-ink'
+                            : 'bg-soft text-ink'
                       }`}
                     >
                       {entry.rank}
@@ -210,11 +215,11 @@ export default function RankingPage() {
                       className="w-8 h-8 flex-shrink-0"
                     />
                     <div className="flex-1 min-w-0">
-                      <p className="font-bold text-[#3b2a22] truncate">
+                      <p className="font-bold text-ink truncate">
                         {entry.user.name}
                       </p>
                     </div>
-                    <span className="tabular text-lg font-black text-[#3b2a22] w-20 text-right">
+                    <span className="tabular text-lg font-black text-ink w-20 text-right">
                       {entry.value}
                     </span>
                   </Link>

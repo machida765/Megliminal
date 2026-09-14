@@ -9,6 +9,7 @@ import { CommentSection } from '@/components/post/CommentSection';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/components/providers/AuthProvider';
 import { useTranslations } from '@/components/providers/LocaleProvider';
+import { SHOW_COMMENTS } from '@/lib/auth/public-board';
 import { useMajorCategories, usePost, useSubCategories } from '@/lib/data/hooks';
 
 interface PostPageProps {
@@ -58,9 +59,9 @@ export default function PostPage({ params }: PostPageProps) {
         subCategory={subCategory}
         isOwner={isOwner}
         onHidden={() => router.push('/')}
-        onDeleted={() => router.push(user?.id ? `/profile/${user.id}` : '/')}
+        onDeleted={() => router.push('/')}
       />
-      <CommentSection postId={post.id} />
+      {SHOW_COMMENTS ? <CommentSection postId={post.id} /> : null}
     </div>
   );
 }

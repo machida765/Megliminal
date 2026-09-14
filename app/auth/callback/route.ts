@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { PUBLIC_BOARD } from '@/lib/auth/public-board';
 import { getSafeRedirectPath } from '@/lib/auth/safe-redirect';
 import { createClient } from '@/lib/supabase/server';
 
@@ -17,5 +18,7 @@ export async function GET(request: Request) {
     }
   }
 
-  return NextResponse.redirect(`${origin}/login?error=auth_callback`);
+  return NextResponse.redirect(
+    `${origin}${PUBLIC_BOARD ? '/' : '/login?error=auth_callback'}`
+  );
 }

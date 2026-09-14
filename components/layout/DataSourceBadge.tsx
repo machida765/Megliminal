@@ -3,8 +3,8 @@
 import { getDataSourceKind, getDataSourceLabel } from '@/lib/config/data-source';
 
 const STYLES = {
-  docker: 'bg-[#dbeafe] text-[#1e40af]',
-  cloud: 'bg-[#ffedd5] text-[#9a3412]',
+  docker: 'bg-soft text-ink',
+  cloud: 'bg-pop/30 text-brand',
 } as const;
 
 const TITLES = {
@@ -23,7 +23,7 @@ export function DataSourceBadge() {
 
   return (
     <span
-      className={`inline-flex items-center rounded-sm px-1.5 py-0.5 text-[10px] font-black tracking-wide rotate-3 ${STYLES[kind]}`}
+      className={`inline-flex items-center rounded-full px-1.5 py-0.5 text-[10px] font-semibold tracking-wide ${STYLES[kind]}`}
       title={TITLES[kind]}
     >
       {label}

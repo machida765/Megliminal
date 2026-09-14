@@ -12,12 +12,24 @@ import { useAuth } from '@/components/providers/AuthProvider';
 import { useTranslations } from '@/components/providers/LocaleProvider';
 import { getSafeRedirectPath } from '@/lib/auth/safe-redirect';
 
-function LoginFormInner() {
+type LoginFormProps = {
+  defaultRedirect?: string;
+  /** メール・パスワード・送信だけ出す（管理者ログイン用） */
+  minimal?: boolean;
+};
+
+function LoginFormInner({
+  defaultRedirect = '/',
+  minimal = false,
+}: LoginFormProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { t } = useTranslations();
   const { signInWithPassword } = useAuth();
-  const redirectTo = getSafeRedirectPath(searchParams.get('redirect'));
+  const redirectTo = getSafeRedirectPath(
+    searchParams.get('redirect'),
+    defaultRedirect
+  );
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState('');
   const resetSuccess = searchParams.get('reset') === 'success';
@@ -67,15 +79,21 @@ function LoginFormInner() {
   return (
     <div className="max-w-md mx-auto">
       <Card>
-        <CardHeader>
-          <CardTitle>{t('auth.login.title')}</CardTitle>
-        </CardHeader>
+        {minimal ? null : (
+          <CardHeader>
+            <CardTitle>{t('auth.login.title')}</CardTitle>
+          </CardHeader>
+        )}
 
         <CardContent>
-          <GoogleSignInButton onError={setSubmitError} />
-          <AuthDivider />
+          {minimal ? null : (
+            <>
+              <GoogleSignInButton onError={setSubmitError} />
+              <AuthDivider />
+            </>
+          )}
 
-          {resetSuccess ? (
+          {!minimal && resetSuccess ? (
             <p className="text-sm text-green-700 bg-green-50 border border-green-200 rounded-sm px-3 py-2 mb-4">
               {t('auth.resetPassword.successLogin')}
             </p>
@@ -100,12 +118,14 @@ function LoginFormInner() {
                 <label className="block text-sm font-semibold">
                   {t('auth.login.password')}
                 </label>
-                <Link
-                  href="/forgot-password"
-                  className="text-xs text-orange-600 font-semibold hover:underline"
-                >
-                  {t('auth.login.forgotPasswordLink')}
-                </Link>
+                {minimal ? null : (
+                  <Link
+                    href="/forgot-password"
+                    className="text-xs text-orange-600 font-semibold hover:underline"
+                  >
+                    {t('auth.login.forgotPasswordLink')}
+                  </Link>
+                )}
               </div>
               <Input
                 type="password"
@@ -129,22 +149,27 @@ function LoginFormInner() {
             </Button>
           </form>
 
-          <div className="text-center mt-4 text-sm text-gray-600">
-            {t('auth.login.noAccount')}
-            <Link href="/signup" className="text-orange-600 font-semibold ml-1">
-              {t('auth.login.signupLink')}
-            </Link>
-          </div>
+          {minimal ? null : (
+            <div className="text-center mt-4 text-sm text-gray-600">
+              {t('auth.login.noAccount')}
+              <Link href="/signup" className="text-orange-600 font-semibold ml-1">
+                {t('auth.login.signupLink')}
+              </Link>
+            </div>
+          )}
         </CardContent>
       </Card>
     </div>
   );
 }
 
-export function LoginForm() {
+export function LoginForm({
+  defaultRedirect = '/',
+  minimal = false,
+}: LoginFormProps) {
   return (
     <Suspense fallback={null}>
-      <LoginFormInner />
+      <LoginFormInner defaultRedirect={defaultRedirect} minimal={minimal} />
     </Suspense>
   );
 }

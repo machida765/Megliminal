@@ -4,7 +4,7 @@ export const Card = forwardRef<HTMLDivElement, HTMLAttributes<HTMLDivElement>>(
   ({ className = '', ...props }, ref) => (
     <div
       ref={ref}
-      className={`paper-note ${className}`}
+      className={`rounded-[14px] border border-line bg-surface ${className}`}
       {...props}
     />
   )
@@ -24,7 +24,7 @@ export const CardTitle = forwardRef<
 >(({ className = '', ...props }, ref) => (
   <h3
     ref={ref}
-    className={`text-2xl font-semibold leading-none tracking-tight ${className}`}
+    className={`font-display text-2xl font-semibold leading-none tracking-tight ${className}`}
     {...props}
   />
 ));

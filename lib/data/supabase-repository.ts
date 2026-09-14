@@ -1,5 +1,7 @@
 import { createClient } from '@/lib/supabase/client';
 import type { SupabaseClient } from '@supabase/supabase-js';
+import { canAccessAdmin } from '@/lib/auth/admin-access';
+import { PUBLIC_BOARD } from '@/lib/auth/public-board';
 import { checkPostFrequency } from '@/lib/post-frequency';
 import { getPeriodStart } from '@/lib/ranking';
 import type {
@@ -52,7 +54,8 @@ import type {
 type SupabaseReportRow = {
   id: string;
   post_id: string;
-  reporter_id: string;
+  reporter_id: string | null;
+  reporter_key: string | null;
   reason: string;
   detail: string | null;
   status: string;
@@ -63,7 +66,8 @@ function mapReportRow(row: SupabaseReportRow): Report {
   return {
     id: row.id,
     postId: row.post_id,
-    reporterId: row.reporter_id,
+    reporterId: row.reporter_id ?? undefined,
+    reporterKey: row.reporter_key ?? undefined,
     reason: row.reason as ReportReason,
     detail: row.detail ?? undefined,
     createdAt: row.created_at,
@@ -102,6 +106,31 @@ export class SupabaseDataRepository implements DataRepository {
     const authenticatedUserId = await this.getAuthenticatedUserId();
     if (validatedUserId !== authenticatedUserId) {
       throw new Error('他のユーザーとして操作することはできません。');
+    }
+  }
+
+  /** ログイン中は本人確認。掲示板モードでは未ログインの匿名書き込みを許可する。 */
+  private async assertCanWriteAs(userId: string | null | undefined): Promise<string | null> {
+    if (userId) {
+      await this.assertActingAs(userId);
+      return userId;
+    }
+    if (!PUBLIC_BOARD) {
+      throw new Error('認証が必要です。');
+    }
+    return null;
+  }
+
+  private async assertIsAdmin(): Promise<void> {
+    const userId = await this.getAuthenticatedUserId();
+    const { data: profile, error } = await this.client
+      .from('profiles')
+      .select('role')
+      .eq('id', userId)
+      .single();
+
+    if (error || !canAccessAdmin(userId, profile?.role)) {
+      throw new Error('管理者権限が必要です。');
     }
   }
 
@@ -398,12 +427,12 @@ export class SupabaseDataRepository implements DataRepository {
 
   async createPost(input: CreatePostInput): Promise<Post> {
     const validated = createPostSchema.parse(input);
-    await this.assertActingAs(validated.userId);
+    const userId = await this.assertCanWriteAs(validated.userId);
 
     const { data, error } = await this.client
       .from('posts')
       .insert({
-        user_id: validated.userId,
+        user_id: userId,
         major_category_id: validated.majorCategoryId,
         sub_category_id: validated.subCategoryId ?? null,
         title: validated.title,
@@ -597,15 +626,15 @@ export class SupabaseDataRepository implements DataRepository {
     return (data ?? []).map((row) => mapSupabaseComment(row as unknown as SupabaseCommentRow));
   }
 
-  async addComment(userId: string, postId: string, body: string): Promise<Comment> {
-    await this.assertActingAs(userId);
+  async addComment(userId: string | null, postId: string, body: string): Promise<Comment> {
+    const actingUserId = await this.assertCanWriteAs(userId);
     const validatedPostId = postIdSchema.parse(postId);
     const validatedBody = commentBodySchema.parse(body);
 
     const { data, error } = await this.client
       .from('comments')
       .insert({
-        user_id: userId,
+        user_id: actingUserId,
         post_id: validatedPostId,
         body: validatedBody,
       })
@@ -700,18 +729,22 @@ export class SupabaseDataRepository implements DataRepository {
     return (data ?? []).map((row) => row.post_id as string);
   }
 
-  async addLike(userId: string, postId: string): Promise<Like> {
-    await this.assertActingAs(userId);
+  async addLike(userId: string | null, postId: string): Promise<Like> {
+    const actingUserId = await this.assertCanWriteAs(userId);
     const validatedPostId = postIdSchema.parse(postId);
+    const payload = { user_id: actingUserId, post_id: validatedPostId };
 
-    const { data, error } = await this.client
-      .from('likes')
-      .upsert(
-        { user_id: userId, post_id: validatedPostId },
-        { onConflict: 'post_id,user_id', ignoreDuplicates: true }
-      )
-      .select('id, post_id, user_id, created_at')
-      .maybeSingle();
+    const { data, error } = actingUserId
+      ? await this.client
+          .from('likes')
+          .upsert(payload, { onConflict: 'post_id,user_id', ignoreDuplicates: true })
+          .select('id, post_id, user_id, created_at')
+          .maybeSingle()
+      : await this.client
+          .from('likes')
+          .insert(payload)
+          .select('id, post_id, user_id, created_at')
+          .single();
 
     if (error) throw error;
 
@@ -724,11 +757,10 @@ export class SupabaseDataRepository implements DataRepository {
       };
     }
 
-    // ignoreDuplicates で既存行のときは何も返らないため、改めて取得する
     const { data: existing, error: existingError } = await this.client
       .from('likes')
       .select('id, post_id, user_id, created_at')
-      .eq('user_id', userId)
+      .eq('user_id', actingUserId)
       .eq('post_id', validatedPostId)
       .single();
 
@@ -847,7 +879,8 @@ export class SupabaseDataRepository implements DataRepository {
       }
 
       for (const row of data ?? []) {
-        const userId = row.user_id as string;
+        const userId = row.user_id as string | null;
+        if (!userId) continue;
         valueByUserId.set(userId, (valueByUserId.get(userId) ?? 0) + 1);
       }
     } else {
@@ -861,7 +894,9 @@ export class SupabaseDataRepository implements DataRepository {
       }
 
       const authorByPostId = new Map(
-        (postRows ?? []).map((row) => [row.id as string, row.user_id as string])
+        (postRows ?? [])
+          .filter((row) => Boolean(row.user_id))
+          .map((row) => [row.id as string, row.user_id as string])
       );
 
       let likeQuery = this.client.from('likes').select('post_id');
@@ -1003,33 +1038,62 @@ export class SupabaseDataRepository implements DataRepository {
   }
 
   async reportPost(
-    reporterId: string,
     postId: string,
     reason: ReportReason,
-    detail?: string
+    detail?: string,
+    reporter?: { userId: string } | { key: string }
   ): Promise<Report> {
-    await this.assertActingAs(reporterId);
     const validatedPostId = postIdSchema.parse(postId);
     const validatedReason = reportReasonSchema.parse(reason);
     const validatedDetail = detail ? reportDetailSchema.parse(detail) : null;
 
-    const { error } = await this.client.from('reports').upsert(
-      {
-        reporter_id: reporterId,
+    let payload: {
+      post_id: string;
+      reason: ReportReason;
+      detail: string | null;
+      reporter_id?: string;
+      reporter_key?: string;
+    };
+
+    if (reporter && 'userId' in reporter) {
+      await this.assertActingAs(reporter.userId);
+      payload = {
         post_id: validatedPostId,
         reason: validatedReason,
         detail: validatedDetail,
-      },
-      { onConflict: 'post_id,reporter_id' }
-    );
+        reporter_id: reporter.userId,
+      };
+    } else if (reporter && 'key' in reporter) {
+      if (!PUBLIC_BOARD) {
+        throw new Error('認証が必要です。');
+      }
+      payload = {
+        post_id: validatedPostId,
+        reason: validatedReason,
+        detail: validatedDetail,
+        reporter_key: reporter.key,
+      };
+    } else {
+      throw new Error('通報者情報がありません。');
+    }
+
+    const { error } = await this.client.from('reports').insert(payload);
 
     if (error) throw error;
 
+    const isUserReport = Boolean(reporter && 'userId' in reporter);
     const { data, error: fetchError } = await this.client
       .from('reports')
-      .select('id, post_id, reporter_id, reason, detail, status, created_at')
+      .select(
+        'id, post_id, reporter_id, reporter_key, reason, detail, status, created_at'
+      )
       .eq('post_id', validatedPostId)
-      .eq('reporter_id', reporterId)
+      .eq(
+        isUserReport ? 'reporter_id' : 'reporter_key',
+        isUserReport
+          ? (reporter as { userId: string }).userId
+          : (reporter as { key: string }).key
+      )
       .single();
 
     if (fetchError || !data) {
@@ -1073,9 +1137,12 @@ export class SupabaseDataRepository implements DataRepository {
   }
 
   async getReports(status?: Report['status']): Promise<Report[]> {
+    await this.assertIsAdmin();
     let query = this.client
       .from('reports')
-      .select('id, post_id, reporter_id, reason, detail, status, created_at')
+      .select(
+        'id, post_id, reporter_id, reporter_key, reason, detail, status, created_at'
+      )
       .order('created_at', { ascending: false });
 
     if (status) {
@@ -1093,6 +1160,7 @@ export class SupabaseDataRepository implements DataRepository {
   }
 
   async resolveReports(postIds: string[]): Promise<void> {
+    await this.assertIsAdmin();
     if (postIds.length === 0) return;
     const validatedIds = postIds.map((id) => postIdSchema.parse(id));
 

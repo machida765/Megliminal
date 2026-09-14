@@ -29,7 +29,7 @@ const avatarUrlSchema = z
   );
 
 export const createPostSchema = z.object({
-  userId: uuidSchema,
+  userId: uuidSchema.optional().nullable(),
   majorCategoryId: idSchema,
   subCategoryId: idSchema.nullish(),
   tagIds: z.array(idSchema).max(20).optional(),

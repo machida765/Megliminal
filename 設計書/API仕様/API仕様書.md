@@ -1,6 +1,6 @@
 # API仕様書
 
-最終更新: 2026-09-01
+最終更新: 2026-09-14
 
 このアプリに **公開 REST API（`/api/v1/...`）はない**。  
 ブラウザ ↔ アプリのデータのやりとりは次の 2 系統に分かれる。
@@ -53,7 +53,8 @@ Browser
 
 | パス | 条件 |
 | --- | --- |
-| `/create` `/bookmarks` `/profile/edit` `/settings` `/reset-password` | ログイン必須 |
+| `/create` | ログイン不要（掲示板モード） |
+| `/bookmarks` `/profile/edit` `/settings` `/reset-password` | ログイン必須 |
 | `/post/[id]/edit` | ログイン必須（所有者チェックは repository / RLS） |
 | `/admin` | ログイン + `profiles.role === 'admin'` |
 

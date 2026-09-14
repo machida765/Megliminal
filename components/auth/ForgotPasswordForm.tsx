@@ -43,7 +43,7 @@ export function ForgotPasswordForm() {
         <CardHeader>
           <CardTitle>{t('auth.forgotPassword.sentTitle')}</CardTitle>
         </CardHeader>
-        <CardContent className="space-y-4 text-sm text-[#6a5344]">
+        <CardContent className="space-y-4 text-sm text-quiet">
           <p>{t('auth.forgotPassword.sentBody')}</p>
           <Link href="/login" className="text-orange-600 font-semibold underline underline-offset-2">
             {t('auth.forgotPassword.backToLogin')}
@@ -59,7 +59,7 @@ export function ForgotPasswordForm() {
         <CardTitle>{t('auth.forgotPassword.title')}</CardTitle>
       </CardHeader>
       <CardContent>
-        <p className="text-sm text-[#6a5344] mb-4">{t('auth.forgotPassword.subtitle')}</p>
+        <p className="text-sm text-quiet mb-4">{t('auth.forgotPassword.subtitle')}</p>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
             <label className="block text-sm font-semibold">{t('auth.login.email')}</label>

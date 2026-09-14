@@ -56,7 +56,7 @@ export function SearchPeriodFilter({
   return (
     <div className="space-y-3">
       <div>
-        <p className="text-xs text-[#8a6a52] mb-2">{t('period.preset')}</p>
+        <p className="text-xs text-quiet mb-2">{t('period.preset')}</p>
         <div className="flex flex-wrap gap-2">
           {PRESET_PERIODS.map((p) => (
             <Button
@@ -73,10 +73,10 @@ export function SearchPeriodFilter({
       </div>
 
       <div>
-        <p className="text-xs text-[#8a6a52] mb-2">{t('period.calendar')}</p>
+        <p className="text-xs text-quiet mb-2">{t('period.calendar')}</p>
         <div className="flex flex-col sm:flex-row sm:items-start gap-2">
           <DatePicker value={dateFrom} onChange={setDateFrom} aria-label={t('date.start')} />
-          <span className="text-sm text-[#8a6a52] text-center shrink-0 sm:pt-2">
+          <span className="text-sm text-quiet text-center shrink-0 sm:pt-2">
             {t('period.rangeSeparator')}
           </span>
           <DatePicker value={dateTo} onChange={setDateTo} aria-label={t('date.end')} />
@@ -92,7 +92,7 @@ export function SearchPeriodFilter({
             </Button>
           )}
         </div>
-        <p className="text-xs text-[#8a6a52] mt-1.5">{t('period.calendarHint')}</p>
+        <p className="text-xs text-quiet mt-1.5">{t('period.calendarHint')}</p>
       </div>
     </div>
   );

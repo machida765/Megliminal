@@ -27,7 +27,7 @@ export function ResetPasswordForm() {
   if (!user) {
     return (
       <Card>
-        <CardContent className="pt-6 space-y-4 text-sm text-[#6a5344]">
+        <CardContent className="pt-6 space-y-4 text-sm text-quiet">
           <p>{t('auth.resetPassword.sessionRequired')}</p>
           <Link href="/forgot-password" className="text-orange-600 font-semibold underline underline-offset-2">
             {t('auth.forgotPassword.title')}
@@ -73,7 +73,7 @@ export function ResetPasswordForm() {
         <CardTitle>{t('auth.resetPassword.title')}</CardTitle>
       </CardHeader>
       <CardContent>
-        <p className="text-sm text-[#6a5344] mb-4">{t('auth.resetPassword.subtitle')}</p>
+        <p className="text-sm text-quiet mb-4">{t('auth.resetPassword.subtitle')}</p>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
             <label className="block text-sm font-semibold">

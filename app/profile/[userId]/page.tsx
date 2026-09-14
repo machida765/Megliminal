@@ -32,7 +32,7 @@ export default function ProfilePage({ params }: ProfilePageProps) {
 
   if (loading) {
     return (
-      <div className="max-w-4xl mx-auto px-4 py-20 text-center text-gray-500">
+      <div className="max-w-4xl mx-auto px-4 py-20 text-center text-quiet">
         {t('common.loading')}
       </div>
     );
@@ -41,7 +41,7 @@ export default function ProfilePage({ params }: ProfilePageProps) {
   if (!user) {
     return (
       <div className="max-w-4xl mx-auto px-4 py-12 text-center">
-        <p className="text-gray-600 mb-4">{t('profile.notFound')}</p>
+        <p className="text-quiet mb-4">{t('profile.notFound')}</p>
         <Button asChild>
           <Link href="/">{t('common.backToHome')}</Link>
         </Button>
@@ -60,10 +60,10 @@ export default function ProfilePage({ params }: ProfilePageProps) {
             className="w-16 h-16"
           />
           <div>
-            <h1 className="text-2xl sm:text-3xl font-black -rotate-1 inline-block hand-title">
+            <h1 className="font-display text-2xl sm:text-3xl font-semibold">
               {user.name}
             </h1>
-            <p className="text-gray-500 text-sm">
+            <p className="text-quiet text-sm">
               {t('profile.postCount', { count: posts.length })}
             </p>
           </div>
@@ -99,7 +99,7 @@ export default function ProfilePage({ params }: ProfilePageProps) {
           ))}
         </div>
       ) : (
-        <p className="text-center text-gray-500 py-12">{t('profile.noPosts')}</p>
+        <p className="text-center text-quiet py-12">{t('profile.noPosts')}</p>
       )}
     </div>
   );

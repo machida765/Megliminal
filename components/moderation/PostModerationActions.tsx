@@ -13,6 +13,8 @@ import {
 import { Textarea } from '@/components/ui/textarea';
 import { useAuth } from '@/components/providers/AuthProvider';
 import { useTranslations } from '@/components/providers/LocaleProvider';
+import { getOrCreateReporterKey } from '@/lib/auth/reporter-key';
+import { PUBLIC_BOARD } from '@/lib/auth/public-board';
 import { getRepository } from '@/lib/data';
 import { useInvalidate } from '@/lib/data/hooks';
 import { type ReportReason } from '@/types';
@@ -33,22 +35,39 @@ export function PostModerationActions({
   const [reason, setReason] = useState<ReportReason>('inappropriate');
   const [detail, setDetail] = useState('');
   const [submitting, setSubmitting] = useState(false);
+  const [reportError, setReportError] = useState('');
 
-  if (!user) return null;
+  const canReport = Boolean(user) || PUBLIC_BOARD;
+  if (!canReport) return null;
 
   const reasonLabels = messages.report.reason;
   const selectedReasonLabel = reasonLabels[reason];
 
   const handleReport = async () => {
     setSubmitting(true);
-    await getRepository().reportPost(user.id, postId, reason, detail || undefined);
-    setSubmitting(false);
-    setShowReport(false);
-    setDetail('');
-    alert(t('report.submitted'));
+    setReportError('');
+    try {
+      const reporter = user
+        ? { userId: user.id }
+        : { key: getOrCreateReporterKey() };
+      await getRepository().reportPost(
+        postId,
+        reason,
+        detail || undefined,
+        reporter
+      );
+      setShowReport(false);
+      setDetail('');
+      alert(t('report.submitted'));
+    } catch {
+      setReportError(t('report.submitFailed'));
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   const handleHide = async () => {
+    if (!user) return;
     if (!confirm(t('report.hideConfirm'))) {
       return;
     }
@@ -70,16 +89,18 @@ export function PostModerationActions({
           <Flag className="w-4 h-4" />
           {t('report.report')}
         </Button>
-        <Button
-          type="button"
-          variant="outline"
-          size="sm"
-          className="gap-2 text-gray-600"
-          onClick={handleHide}
-        >
-          <EyeOff className="w-4 h-4" />
-          {t('report.hide')}
-        </Button>
+        {user ? (
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            className="gap-2 text-gray-600"
+            onClick={handleHide}
+          >
+            <EyeOff className="w-4 h-4" />
+            {t('report.hide')}
+          </Button>
+        ) : null}
       </div>
 
       {showReport && (
@@ -109,6 +130,9 @@ export function PostModerationActions({
             rows={3}
             className="bg-white"
           />
+          {reportError ? (
+            <p className="text-xs text-red-600">{reportError}</p>
+          ) : null}
           <div className="flex gap-2">
             <Button
               type="button"

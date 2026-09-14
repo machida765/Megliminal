@@ -3,6 +3,7 @@
 /** 画面用フック。TanStack Query によるキャッシュ管理。 */
 import { useCallback } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { SHOW_COMMENTS, SHOW_USER_IDENTITY } from '@/lib/auth/public-board';
 import { getRepository } from '@/lib/data';
 import type {
   Comment,
@@ -134,7 +135,7 @@ export function useComments(postId: string | null | undefined) {
   const { data = [], isLoading, refetch } = useQuery<Comment[]>({
     queryKey: ['comments', postId ?? null],
     queryFn: () => (postId ? getRepository().getComments(postId) : Promise.resolve([])),
-    enabled: Boolean(postId),
+    enabled: SHOW_COMMENTS && Boolean(postId),
   });
 
   const reload = useCallback(async () => {
@@ -180,6 +181,7 @@ export function useUserRankings(
   const { data = [], isLoading } = useQuery<UserRankingEntry[]>({
     queryKey: ['userRankings', period, sortBy],
     queryFn: () => getRepository().getUserRankings({ period, sortBy }),
+    enabled: SHOW_USER_IDENTITY,
   });
 
   return { entries: data, loading: isLoading };

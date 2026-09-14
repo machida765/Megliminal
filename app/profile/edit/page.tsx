@@ -32,7 +32,7 @@ export default function ProfileEditPage() {
 
   if (!user || !profile) {
     return (
-      <div className="max-w-lg mx-auto px-4 py-20 text-center text-gray-500">
+      <div className="max-w-lg mx-auto px-4 py-20 text-center text-quiet">
         {t('profile.edit.loginRequired')}
       </div>
     );
@@ -61,17 +61,17 @@ export default function ProfileEditPage() {
       <div>
         <Link
           href={`/profile/${user.id}`}
-          className="inline-flex items-center gap-1.5 text-sm font-semibold text-[#8a6a58] hover:text-[#c45c28]"
+          className="inline-flex items-center gap-1.5 text-sm font-semibold text-quiet hover:text-brand"
         >
           <ArrowLeft className="h-4 w-4" />
           {t('profile.backToProfile')}
         </Link>
-        <h1 className="mt-4 text-2xl font-black text-[#3b2a22]">{t('profile.edit.title')}</h1>
-        <p className="mt-1 text-sm text-[#8a6a58]">{t('profile.edit.subtitle')}</p>
+        <h1 className="mt-4 font-display text-2xl font-semibold text-ink">{t('profile.edit.title')}</h1>
+        <p className="mt-1 text-sm text-quiet">{t('profile.edit.subtitle')}</p>
       </div>
 
-      <section className="rounded-2xl border border-[#ead6bb] bg-[#fffdf8] px-5 py-6 sm:px-6">
-        <h2 className="text-base font-bold text-[#3b2a22]">{t('profile.edit.basicInfo')}</h2>
+      <section className="rounded-[14px] border border-line bg-surface px-5 py-6 sm:px-6">
+        <h2 className="text-base font-bold text-ink">{t('profile.edit.basicInfo')}</h2>
         <form onSubmit={handleSubmit} className="mt-5 space-y-5">
           <div className="flex items-center gap-4">
             <UserAvatar
@@ -80,21 +80,21 @@ export default function ProfileEditPage() {
               avatarUrl={avatarUrl}
               className="h-16 w-16"
             />
-            <div className="min-w-0 text-sm text-[#8a6a58]">
-              <p className="truncate font-semibold text-[#3b2a22]">{name || profile.name}</p>
+            <div className="min-w-0 text-sm text-quiet">
+              <p className="truncate font-semibold text-ink">{name || profile.name}</p>
               {user.email ? <p className="truncate">{user.email}</p> : null}
             </div>
           </div>
 
           <div className="space-y-1.5">
-            <label className="block text-sm font-semibold text-[#3b2a22]">
+            <label className="block text-sm font-semibold text-ink">
               {t('profile.edit.displayName')}
             </label>
             <Input value={name} onChange={(e) => setName(e.target.value)} />
           </div>
 
           <div className="space-y-1.5">
-            <label className="block text-sm font-semibold text-[#3b2a22]">
+            <label className="block text-sm font-semibold text-ink">
               {t('profile.edit.avatarUrl')}
             </label>
             <Input
@@ -102,7 +102,7 @@ export default function ProfileEditPage() {
               onChange={(e) => setAvatarUrl(e.target.value)}
               placeholder={t('profile.edit.avatarPlaceholder')}
             />
-            <p className="text-xs leading-relaxed text-[#9a7d68]">
+            <p className="text-xs leading-relaxed text-quiet">
               {t('profile.edit.avatarHint')}
             </p>
           </div>

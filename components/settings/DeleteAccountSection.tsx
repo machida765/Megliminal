@@ -102,7 +102,7 @@ export function DeleteAccountSection() {
   return (
     <section
       id="delete-account"
-      className="rounded-2xl border border-[#e8c4b8] bg-[#fff8f6] px-5 py-5 sm:px-6"
+      className="rounded-[14px] border border-line bg-surface px-5 py-5 sm:px-6"
     >
       <div className="flex items-start gap-3">
         <div className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#fde8e4] text-[#b42318]">
@@ -129,39 +129,39 @@ export function DeleteAccountSection() {
         </div>
       ) : (
         <div className="mt-5 space-y-4 border-t border-[#f0d4cc] pt-5 sm:pl-12">
-          <p className="text-sm leading-relaxed text-[#6a5344]">
+          <p className="text-sm leading-relaxed text-quiet">
             {t('settings.delete.description')}
           </p>
-          <ul className="space-y-1.5 text-sm text-[#6a5344]">
+          <ul className="space-y-1.5 text-sm text-quiet">
             <li className="flex gap-2">
-              <span className="text-[#c45c28]">・</span>
+              <span className="text-brand">・</span>
               {t('settings.delete.consequenceProfile')}
             </li>
             <li className="flex gap-2">
-              <span className="text-[#c45c28]">・</span>
+              <span className="text-brand">・</span>
               {t('settings.delete.consequencePosts')}
             </li>
             <li className="flex gap-2">
-              <span className="text-[#c45c28]">・</span>
+              <span className="text-brand">・</span>
               {t('settings.delete.consequenceIrreversible')}
             </li>
           </ul>
 
-          <label className="flex items-start gap-2.5 text-sm text-[#3b2a22]">
+          <label className="flex items-start gap-2.5 text-sm text-ink">
             <input
               type="checkbox"
               checked={acknowledged}
               onChange={(e) => setAcknowledged(e.target.checked)}
-              className="mt-1 h-4 w-4 accent-[#c45c28]"
+              className="mt-1 h-4 w-4 accent-brand"
             />
             <span>{t('settings.delete.acknowledge')}</span>
           </label>
 
           {requiresPassword === null ? (
-            <p className="text-sm text-gray-500">{t('common.loading')}</p>
+            <p className="text-sm text-quiet">{t('common.loading')}</p>
           ) : requiresPassword ? (
             <div className="space-y-1.5">
-              <label className="block text-sm font-semibold text-[#3b2a22]">
+              <label className="block text-sm font-semibold text-ink">
                 {t('settings.delete.passwordLabel')}
               </label>
               <Input
@@ -174,7 +174,7 @@ export function DeleteAccountSection() {
             </div>
           ) : (
             <div className="space-y-1.5">
-              <label className="block text-sm font-semibold text-[#3b2a22]">
+              <label className="block text-sm font-semibold text-ink">
                 {t('settings.delete.confirmPhraseLabel', {
                   phrase: DELETE_ACCOUNT_CONFIRM_PHRASE,
                 })}

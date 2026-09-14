@@ -84,12 +84,12 @@ export function CategoryPicker({
   return (
     <div className="space-y-4">
       <div>
-        <p className="text-xs font-bold text-[#8a6a52] mb-2">{majorLabelText}</p>
+        <p className="text-xs font-bold text-quiet mb-2">{majorLabelText}</p>
         <Select
-          value={majorCategoryId ?? (majorRequired ? undefined : allMajor)}
+          value={majorRequired ? majorCategoryId || null : (majorCategoryId ?? allMajor)}
           onValueChange={handleMajorChange}
         >
-          <SelectTrigger className="w-full min-w-0 bg-white border-[#e4d2b8]">
+          <SelectTrigger className="w-full min-w-0 bg-white border-line">
             <SelectValue
               placeholder={
                 majorRequired ? t('category.selectMajor') : allMajor
@@ -105,7 +105,11 @@ export function CategoryPicker({
               </SelectItem>
             )}
             {activeMajorCategories.map((category) => (
-              <SelectItem key={category.id} value={category.id} label={category.name}>
+              <SelectItem
+                key={category.id}
+                value={category.id}
+                label={category.name}
+              >
                 {category.name}
               </SelectItem>
             ))}
@@ -115,13 +119,13 @@ export function CategoryPicker({
 
       {hasSubs && (
         <div>
-          <p className="text-xs font-bold text-[#8a6a52] mb-2">{subLabelText}</p>
+          <p className="text-xs font-bold text-quiet mb-2">{subLabelText}</p>
           <Select
             value={subCategoryId ?? emptySub}
             onValueChange={handleSubChange}
             disabled={!majorCategoryId || availableSubs.length === 0}
           >
-            <SelectTrigger className="w-full min-w-0 bg-white border-[#e4d2b8]">
+            <SelectTrigger className="w-full min-w-0 bg-white border-line">
               <SelectValue
                 placeholder={
                   !majorCategoryId

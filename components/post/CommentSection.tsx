@@ -11,6 +11,7 @@ import { LOCALE_DATE_FORMAT } from '@/lib/i18n/config';
 import { getRepository } from '@/lib/data';
 import { useComments } from '@/lib/data/hooks';
 import { isAdminRole } from '@/lib/auth/roles';
+import { PUBLIC_BOARD, SHOW_COMMENTS, SHOW_USER_IDENTITY, isIdentifiableUserId } from '@/lib/auth/public-board';
 import type { Comment } from '@/types';
 
 const MAX_LENGTH = 1000;
@@ -22,20 +23,23 @@ interface CommentSectionProps {
 export function CommentSection({ postId }: CommentSectionProps) {
   const { t, locale } = useTranslations();
   const { user, profile } = useAuth();
-  const { comments, loading, reload } = useComments(postId);
+  const { comments, loading, reload } = useComments(SHOW_COMMENTS ? postId : null);
   const [body, setBody] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
 
+  if (!SHOW_COMMENTS) return null;
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const trimmed = body.trim();
-    if (!user || !trimmed) return;
+    if (!trimmed) return;
+    if (!user && !PUBLIC_BOARD) return;
 
     setSubmitting(true);
     setError('');
     try {
-      await getRepository().addComment(user.id, postId, trimmed);
+      await getRepository().addComment(user?.id ?? null, postId, trimmed);
       setBody('');
       await reload();
     } catch {
@@ -47,15 +51,15 @@ export function CommentSection({ postId }: CommentSectionProps) {
 
   return (
     <section className="mt-8">
-      <h2 className="font-black text-lg mb-4 -rotate-1 inline-block hand-title">
+      <h2 className="font-display text-lg font-semibold mb-4">
         {t('comment.title')}
-        <span className="ml-2 text-sm font-bold text-[#8a6a52]">
+        <span className="ml-2 text-sm font-semibold text-quiet">
           {t('comment.count', { count: comments.length })}
         </span>
       </h2>
 
-      {user ? (
-        <form onSubmit={handleSubmit} className="paper-note bg-[#fffdf8] p-4 mb-5">
+      {user || PUBLIC_BOARD ? (
+        <form onSubmit={handleSubmit} className="rounded-[14px] border border-line bg-surface p-4 mb-5">
           <Textarea
             value={body}
             onChange={(e) => setBody(e.target.value)}
@@ -64,7 +68,7 @@ export function CommentSection({ postId }: CommentSectionProps) {
             maxLength={MAX_LENGTH}
           />
           <div className="mt-3 flex items-center justify-between gap-3">
-            <span className="text-xs text-[#9a7d68] tabular">
+            <span className="text-xs text-quiet tabular">
               {body.length} / {MAX_LENGTH}
             </span>
             <Button type="submit" size="sm" disabled={submitting || !body.trim()}>
@@ -74,8 +78,8 @@ export function CommentSection({ postId }: CommentSectionProps) {
           {error ? <p className="mt-2 text-sm text-[#b42318]">{error}</p> : null}
         </form>
       ) : (
-        <div className="paper-note bg-[#fff7d6] p-4 mb-5 flex flex-wrap items-center justify-between gap-3">
-          <p className="text-sm text-[#6a5344]">{t('comment.loginRequired')}</p>
+        <div className="rounded-[14px] border border-line bg-surface p-4 mb-5 flex flex-wrap items-center justify-between gap-3">
+          <p className="text-sm text-quiet">{t('comment.loginRequired')}</p>
           <Button asChild size="sm" variant="outline">
             <Link href={`/login?redirect=/post/${postId}`}>{t('comment.login')}</Link>
           </Button>
@@ -83,9 +87,9 @@ export function CommentSection({ postId }: CommentSectionProps) {
       )}
 
       {loading ? (
-        <p className="text-sm text-[#8a6a52]">{t('common.loading')}</p>
+        <p className="text-sm text-quiet">{t('common.loading')}</p>
       ) : comments.length === 0 ? (
-        <p className="text-sm text-[#8a6a52] py-6 text-center">{t('comment.empty')}</p>
+        <p className="text-sm text-quiet py-6 text-center">{t('comment.empty')}</p>
       ) : (
         <ul className="space-y-3">
           {comments.map((comment) => (
@@ -94,9 +98,10 @@ export function CommentSection({ postId }: CommentSectionProps) {
               comment={comment}
               locale={locale}
               canManage={
-                comment.userId === user?.id || isAdminRole(profile?.role)
+                Boolean(comment.userId && comment.userId === user?.id) ||
+                isAdminRole(profile?.role)
               }
-              canEdit={comment.userId === user?.id}
+              canEdit={Boolean(comment.userId && comment.userId === user?.id)}
               onChanged={reload}
             />
           ))}
@@ -164,21 +169,29 @@ function CommentItem({
   };
 
   return (
-    <li className="paper-note bg-[#fffdf6] p-4">
+    <li className="rounded-[14px] border border-line bg-surface p-4">
       <div className="flex items-center gap-2.5 mb-2">
-        <UserAvatar
-          userId={comment.user.id}
-          name={comment.user.name}
-          avatarUrl={comment.user.avatarUrl}
-          className="w-7 h-7"
-        />
-        <Link
-          href={`/profile/${comment.userId}`}
-          className="font-black text-sm text-[#3b2a22] hover:text-[#c45c28]"
-        >
-          {comment.user.name}
-        </Link>
-        <span className="text-xs text-[#9a7d68]">{formattedDate}</span>
+        {SHOW_USER_IDENTITY ? (
+          <UserAvatar
+            userId={comment.user.id}
+            name={comment.user.name}
+            avatarUrl={comment.user.avatarUrl}
+            className="w-7 h-7"
+          />
+        ) : null}
+        {SHOW_USER_IDENTITY ? (
+          isIdentifiableUserId(comment.userId) ? (
+          <Link
+            href={`/profile/${comment.userId}`}
+            className="font-semibold text-sm text-ink hover:text-brand"
+          >
+            {comment.user.name}
+          </Link>
+          ) : (
+          <span className="font-semibold text-sm text-ink">{comment.user.name}</span>
+          )
+        ) : null}
+        <span className="text-xs text-quiet">{formattedDate}</span>
       </div>
 
       {editing ? (
@@ -208,7 +221,7 @@ function CommentItem({
           </div>
         </div>
       ) : (
-        <p className="text-sm leading-relaxed text-[#4a372c] whitespace-pre-wrap">
+        <p className="text-sm leading-relaxed text-ink whitespace-pre-wrap">
           {comment.body}
         </p>
       )}
@@ -220,7 +233,7 @@ function CommentItem({
           {canEdit ? (
             <button
               type="button"
-              className="text-[#8a6a52] hover:text-[#c45c28]"
+              className="text-quiet hover:text-brand"
               onClick={() => setEditing(true)}
             >
               {t('comment.edit')}

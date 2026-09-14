@@ -49,7 +49,7 @@ describe.skipIf(!reachable)('RLS / 権限', () => {
       expect(data?.id).toBe(alicePostId);
     });
 
-    it('未ログインでは投稿できない', async () => {
+    it('未ログインでは他人名義で投稿できない', async () => {
       const { error } = await anon.from('posts').insert({
         user_id: alice.id,
         major_category_id: majorCategoryId,
@@ -58,6 +58,26 @@ describe.skipIf(!reachable)('RLS / 権限', () => {
       });
 
       expect(error).not.toBeNull();
+    });
+
+    it('未ログインでも匿名なら投稿できる', async () => {
+      const { data, error } = await anon
+        .from('posts')
+        .insert({
+          user_id: null,
+          major_category_id: majorCategoryId,
+          title: '掲示板の匿名投稿',
+          description: 'ログインなしで書いた投稿です。',
+        })
+        .select('id, user_id')
+        .single();
+
+      expect(error).toBeNull();
+      expect(data?.user_id).toBeNull();
+
+      if (data?.id) {
+        await admin.from('posts').delete().eq('id', data.id);
+      }
     });
 
     it('他人名義では投稿できない', async () => {
@@ -113,7 +133,7 @@ describe.skipIf(!reachable)('RLS / 権限', () => {
     });
 
     it('admin は他人の投稿を削除できる', async () => {
-      const targetId = await createPostAs(alice, majorCategoryId, '削除される投稿');
+      const targetId = await createPostAs(bob, majorCategoryId, '削除される投稿');
 
       const { data, error } = await moderator.client
         .from('posts')
@@ -179,6 +199,21 @@ describe.skipIf(!reachable)('RLS / 権限', () => {
       expect(error).not.toBeNull();
     });
 
+    it('未ログインでも匿名ならいいねできる', async () => {
+      const { data, error } = await anon
+        .from('likes')
+        .insert({ post_id: alicePostId, user_id: null })
+        .select('id, user_id')
+        .single();
+
+      expect(error).toBeNull();
+      expect(data?.user_id).toBeNull();
+
+      if (data?.id) {
+        await admin.from('likes').delete().eq('id', data.id);
+      }
+    });
+
     it('他人のいいねは解除できない', async () => {
       const { data, error } = await alice.client
         .from('likes')
@@ -234,6 +269,21 @@ describe.skipIf(!reachable)('RLS / 権限', () => {
         .insert({ post_id: alicePostId, user_id: alice.id, body: 'なりすまし' });
 
       expect(error).not.toBeNull();
+    });
+
+    it('未ログインでも匿名ならコメントできる', async () => {
+      const { data, error } = await anon
+        .from('comments')
+        .insert({ post_id: alicePostId, user_id: null, body: '匿名コメント' })
+        .select('id, user_id')
+        .single();
+
+      expect(error).toBeNull();
+      expect(data?.user_id).toBeNull();
+
+      if (data?.id) {
+        await admin.from('comments').delete().eq('id', data.id);
+      }
     });
 
     it('他人のコメントは編集できない', async () => {
@@ -372,6 +422,20 @@ describe.skipIf(!reachable)('RLS / 権限', () => {
 
       expect(error).toBeNull();
       expect(data?.[0]?.status).toBe('resolved');
+    });
+
+    it('未ログインでも reporter_key 付き通報を作成できる', async () => {
+      const anonPostId = await createPostAs(bob, majorCategoryId, '匿名通報テスト用');
+
+      const { error } = await anon.from('reports').insert({
+        post_id: anonPostId,
+        reporter_key: `rls-anon-${Date.now()}`,
+        reason: 'spam',
+        detail: '匿名通報',
+      });
+
+      expect(error).toBeNull();
+      await admin.from('posts').delete().eq('id', anonPostId);
     });
   });
 

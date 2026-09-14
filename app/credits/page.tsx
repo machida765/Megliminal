@@ -19,9 +19,9 @@ export const metadata: Metadata = {
 
 function CreditListItem({ entry }: { entry: CreditEntry }) {
   return (
-    <li className="rounded-sm border border-[#e8c9a4]/60 bg-[#fffdf8] px-4 py-3">
-      <p className="font-bold text-[#3b2a22]">{entry.name}</p>
-      <p className="mt-1 text-xs text-[#6a5344]">
+    <li className="rounded-sm border border-line/60 bg-surface px-4 py-3">
+      <p className="font-bold text-ink">{entry.name}</p>
+      <p className="mt-1 text-xs text-quiet">
         作者: {entry.author}
         <br />
         ライセンス:{' '}
@@ -29,7 +29,7 @@ function CreditListItem({ entry }: { entry: CreditEntry }) {
           href={entry.licenseUrl}
           target="_blank"
           rel="noopener noreferrer"
-          className="text-[#b56a38] underline underline-offset-2 hover:text-[#ef7d3b]"
+          className="text-brand underline underline-offset-2 hover:text-brand"
         >
           {entry.license}
         </a>
@@ -38,12 +38,12 @@ function CreditListItem({ entry }: { entry: CreditEntry }) {
           href={entry.sourceUrl}
           target="_blank"
           rel="noopener noreferrer"
-          className="text-[#b56a38] underline underline-offset-2 hover:text-[#ef7d3b]"
+          className="text-brand underline underline-offset-2 hover:text-brand"
         >
           ソース
         </a>
       </p>
-      {entry.note ? <p className="mt-2 text-xs text-[#b56a38]">{entry.note}</p> : null}
+      {entry.note ? <p className="mt-2 text-xs text-brand">{entry.note}</p> : null}
     </li>
   );
 }
@@ -54,32 +54,32 @@ export default function CreditsPage() {
       <LegalSection title="デフォルトアバター">
         <p>
           ユーザーがアイコンを設定していない場合、または Google 等のプロフィール画像がない場合に、
-          <code className="mx-1 rounded bg-[#fff1e4] px-1.5 py-0.5 text-xs">public/avatars/</code>
+          <code className="mx-1 rounded bg-soft/50 px-1.5 py-0.5 text-xs">public/avatars/</code>
           内の SVG を表示します。これらは{' '}
           <a
             href={DICEBEAR_CORE.sourceUrl}
             target="_blank"
             rel="noopener noreferrer"
-            className="text-[#b56a38] underline underline-offset-2 hover:text-[#ef7d3b]"
+            className="text-brand underline underline-offset-2 hover:text-brand"
           >
             DiceBear
           </a>{' '}
           ライブラリで生成しています。
         </p>
-        <p className="text-xs text-[#b56a38]">
-          生成スクリプト: <code className="rounded bg-[#fff1e4] px-1">npm run avatars:generate</code>
+        <p className="text-xs text-brand">
+          生成スクリプト: <code className="rounded bg-soft/50 px-1">npm run avatars:generate</code>
           {' · '}
           <a
             href="https://www.dicebear.com/licenses/"
             target="_blank"
             rel="noopener noreferrer"
-            className="underline underline-offset-2 hover:text-[#ef7d3b]"
+            className="underline underline-offset-2 hover:text-brand"
           >
             DiceBear ライセンス一覧
           </a>
         </p>
-        <div className="rounded-sm border border-[#e8c9a4]/60 bg-[#fffdf8] px-4 py-3 text-xs text-[#6a5344]">
-          <p className="font-bold text-[#3b2a22]">{DICEBEAR_CORE.name}</p>
+        <div className="rounded-sm border border-line/60 bg-surface px-4 py-3 text-xs text-quiet">
+          <p className="font-bold text-ink">{DICEBEAR_CORE.name}</p>
           <p className="mt-1">
             {DICEBEAR_CORE.note}
             <br />
@@ -88,7 +88,7 @@ export default function CreditsPage() {
               href={DICEBEAR_CORE.licenseUrl}
               target="_blank"
               rel="noopener noreferrer"
-              className="text-[#b56a38] underline underline-offset-2 hover:text-[#ef7d3b]"
+              className="text-brand underline underline-offset-2 hover:text-brand"
             >
               {DICEBEAR_CORE.license}
             </a>

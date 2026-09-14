@@ -3,22 +3,22 @@ import { cva, type VariantProps } from 'class-variance-authority';
 import { cn } from '@/lib/utils';
 
 const buttonVariants = cva(
-  'inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-[6px] text-sm font-bold transition-transform duration-150 disabled:pointer-events-none disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 -rotate-[0.4deg] hover:rotate-1',
+  'inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-[14px] text-sm font-semibold transition-colors duration-150 disabled:pointer-events-none disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-brand',
   {
     variants: {
       variant: {
         default:
-          'bg-[#ef7d3b] text-white shadow-[3px_4px_0_rgba(90,50,20,0.18)] hover:bg-[#e06d2c] focus-visible:ring-orange-300',
+          'bg-brand text-brand-ink hover:bg-brand/90 focus-visible:ring-brand',
         outline:
-          'border-2 border-[#e8c9a4] bg-[#fffdf8] text-[#3b2a22] hover:bg-[#fff1e4] focus-visible:ring-orange-200',
+          'border border-line bg-surface text-ink hover:bg-soft/60 focus-visible:ring-brand',
         ghost:
-          'bg-transparent text-[#6a4634] hover:bg-[#fff7d6] hover:text-[#c45c28] focus-visible:ring-orange-200 rotate-0 hover:rotate-0',
+          'bg-transparent text-quiet hover:bg-soft/50 hover:text-brand focus-visible:ring-brand',
         soft:
-          'bg-[#fff7d6] text-[#c45c28] hover:bg-[#ffe8d2] focus-visible:ring-orange-200',
+          'bg-soft text-brand hover:bg-soft/80 focus-visible:ring-brand',
         flat:
-          'rotate-0 hover:rotate-0 bg-[#ef7d3b] text-white hover:bg-[#e06d2c] focus-visible:ring-orange-300 shadow-none',
+          'bg-brand text-brand-ink hover:bg-brand/90 focus-visible:ring-brand shadow-none',
         'flat-outline':
-          'rotate-0 hover:rotate-0 border border-[#e4d2b8] bg-[#fffdf9] text-[#3b2a22] hover:bg-[#fff6ea] focus-visible:ring-orange-200 shadow-none',
+          'border border-line bg-surface text-ink hover:bg-soft/50 focus-visible:ring-brand shadow-none',
       },
       size: {
         default: 'h-10 px-5 py-2',

@@ -2,21 +2,24 @@
 
 import Link from 'next/link';
 import { Post, MajorCategory, SubCategory } from '@/types';
-import { ExternalLink, Heart } from 'lucide-react';
-import * as LucideIcons from 'lucide-react';
+import { Heart } from 'lucide-react';
 import { useMajorCategories, useSubCategories } from '@/lib/data/hooks';
-import { useTranslations } from '@/components/providers/LocaleProvider';
-import { LOCALE_DATE_FORMAT } from '@/lib/i18n/config';
-import { paperTone, tiltClass } from '@/lib/tilt';
 import { cn } from '@/lib/utils';
+import {
+  categoryVisualStyle,
+  postCardVisualClass,
+  resolveCategoryIcon,
+} from '@/lib/category-visual';
 import { UserAvatar } from '@/components/user/UserAvatar';
+import { SHOW_USER_IDENTITY } from '@/lib/auth/public-board';
 
 interface PostCardProps {
   post: Post;
   categories?: MajorCategory[];
   subCategories?: SubCategory[];
-  /** 検索結果など、傾きなしで並べる */
+  /** 検索結果など、ホバー持ち上げなし */
   flat?: boolean;
+  featured?: boolean;
 }
 
 export function PostCard({
@@ -24,8 +27,8 @@ export function PostCard({
   categories: categoriesProp,
   subCategories: subCategoriesProp,
   flat = false,
+  featured = false,
 }: PostCardProps) {
-  const { locale } = useTranslations();
   const { categories: categoriesFromHook } = useMajorCategories(!categoriesProp);
   const { subCategories: subCategoriesFromHook } = useSubCategories(
     !subCategoriesProp
@@ -33,76 +36,79 @@ export function PostCard({
   const categories = categoriesProp ?? categoriesFromHook;
   const subCategories = subCategoriesProp ?? subCategoriesFromHook;
 
-  const formattedDate = new Date(post.createdAt).toLocaleDateString(
-    LOCALE_DATE_FORMAT[locale],
-    {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric',
-    }
-  );
-
   const category = categories.find((c) => c.id === post.majorCategoryId);
   const subCategory = post.subCategoryId
     ? subCategories.find((c) => c.id === post.subCategoryId)
     : undefined;
+  const majorLabel = category?.name;
   const categoryLabel = subCategory
     ? `${category?.name ?? ''} › ${subCategory.name}`
     : category?.name;
-  const CategoryIcon = category?.icon
-    ? (
-        LucideIcons as unknown as Record<
-          string,
-          React.ComponentType<{ className?: string }>
-        >
-      )[category.icon]
-    : undefined;
+  const CategoryIcon = resolveCategoryIcon(category?.icon, category?.id);
+
+  const quote =
+    (post.description ?? '').length > 80
+      ? `${(post.description ?? '').slice(0, 80)}…`
+      : (post.description ?? '');
 
   return (
     <Link
       href={`/post/${post.id}`}
       prefetch={false}
       className={cn(
-        'block h-full p-4',
-        flat
-          ? 'func-surface hover:bg-[#fff6ea] transition-colors'
-          : cn(
-              'paper-note hover:rotate-0 hover:-translate-y-1 transition-transform',
-              tiltClass(post.id),
-              paperTone(post.id)
-            )
+        'recommendation-card',
+        postCardVisualClass(post.majorCategoryId, post.id),
+        featured && 'card-featured',
+        flat && 'is-flat'
       )}
+      style={categoryVisualStyle(post.majorCategoryId)}
     >
-      {category && (
-        <span className="inline-flex items-center gap-1 text-[11px] font-extrabold text-[#c45c28] mb-2">
-          {CategoryIcon && <CategoryIcon className="w-3 h-3" />}
-          {categoryLabel}
-        </span>
-      )}
-      <h3 className="font-black text-[17px] leading-tight line-clamp-2 text-[#3b2a22] hand-title">
-        {post.title}
-      </h3>
-      <div className="flex items-center gap-2 text-sm text-[#8a6a52] mt-2">
-        <UserAvatar
-          userId={post.user.id}
-          name={post.user.name}
-          avatarUrl={post.user.avatarUrl}
-          className="w-6 h-6"
-        />
-        <span>{post.user.name}</span>
+      <div className="card-visual">
+        {majorLabel ? (
+          <span className="card-visual-badge">
+            {CategoryIcon ? (
+              <CategoryIcon className="card-visual-badge-icon" aria-hidden />
+            ) : null}
+            {majorLabel}
+          </span>
+        ) : null}
+        {CategoryIcon ? (
+          <CategoryIcon className="card-visual-icon" aria-hidden />
+        ) : (
+          <b aria-hidden="true">{post.title.slice(0, 1)}</b>
+        )}
       </div>
-      <p className="text-sm text-[#6a5344] mt-3 mb-4 line-clamp-3 leading-relaxed">
-        {post.description}
-      </p>
-      <div className="flex items-center justify-between text-xs text-[#8a6a52]">
-        <span>{formattedDate}</span>
-        <div className="flex items-center gap-3">
-          <span className="flex items-center gap-1 text-[#c45c28] font-bold">
-            <Heart className="w-3.5 h-3.5 fill-[#ef7d3b] text-[#ef7d3b]" />
+      <div className="flex flex-1 flex-col p-4">
+        <div className="flex items-center justify-between gap-2 text-[9px] font-bold tracking-widest uppercase">
+          <span className="card-category-label inline-flex min-w-0 items-center gap-1">
+            {CategoryIcon ? <CategoryIcon className="w-3 h-3 shrink-0" /> : null}
+            <span className="truncate">{categoryLabel}</span>
+          </span>
+          <span className="flex items-center gap-1 text-quiet">
+            <Heart className="w-3.5 h-3.5 fill-brand text-brand" />
             {post.likeCount}
           </span>
-          {post.url && <ExternalLink className="w-4 h-4 text-[#ef7d3b]" />}
         </div>
+        <h3 className="font-display mt-3 mb-1 text-base font-semibold leading-snug line-clamp-2">
+          {post.title}
+        </h3>
+        {SHOW_USER_IDENTITY ? (
+          <p className="text-[10px] text-quiet">{post.user.name}</p>
+        ) : null}
+        <blockquote className="mt-3 mb-4 min-h-[42px] font-display text-xs leading-relaxed text-ink/80 line-clamp-3">
+          「{quote}」
+        </blockquote>
+        {SHOW_USER_IDENTITY ? (
+          <div className="mt-auto flex items-center gap-2 text-[10px] text-quiet">
+            <UserAvatar
+              userId={post.user.id}
+              name={post.user.name}
+              avatarUrl={post.user.avatarUrl}
+              className="w-6 h-6"
+            />
+            <span>by {post.user.name}</span>
+          </div>
+        ) : null}
       </div>
     </Link>
   );
