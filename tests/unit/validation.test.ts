@@ -59,6 +59,12 @@ describe('createPostSchema', () => {
     ).toBe(false);
   });
 
+  it('おすすめの理由は空でも通る', () => {
+    expect(createPostSchema.safeParse({ ...validPost, description: '' }).success).toBe(true);
+    const parsed = createPostSchema.parse({ ...validPost, description: '   ' });
+    expect(parsed.description).toBe('');
+  });
+
   it.each(['javascript:alert(1)', 'data:text/html,<script>', 'file:///etc/passwd', 'ftp://a.example'])(
     'URL スキーム %s を弾く',
     (url) => {
@@ -162,6 +168,20 @@ describe('majorCategorySchema', () => {
 
   it('name が空なら弾く', () => {
     expect(majorCategorySchema.safeParse({ ...valid, name: '' }).success).toBe(false);
+  });
+
+  it('色は #rrggbb だけ受け付け、小文字にする', () => {
+    const parsed = majorCategorySchema.parse({
+      ...valid,
+      palette: { from: '#AABBCC', to: '#112233', accent: '#445566' },
+    });
+    expect(parsed.palette).toEqual({ from: '#aabbcc', to: '#112233', accent: '#445566' });
+    expect(
+      majorCategorySchema.safeParse({
+        ...valid,
+        palette: { from: 'red', to: '#112233', accent: '#445566' },
+      }).success
+    ).toBe(false);
   });
 });
 

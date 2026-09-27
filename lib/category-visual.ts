@@ -1,11 +1,16 @@
 import type { CSSProperties, ComponentType } from 'react';
 import * as LucideIcons from 'lucide-react';
 import { cardTone } from '@/lib/card-tone';
+import type { CategoryPalette } from '@/types';
 
-export type CategoryPalette = {
-  from: string;
-  to: string;
-  accent: string;
+export type { CategoryPalette };
+
+const HEX_COLOR = /^#[0-9A-Fa-f]{6}$/;
+
+export const DEFAULT_CATEGORY_PALETTE: CategoryPalette = {
+  from: '#c4b8aa',
+  to: '#7a746c',
+  accent: '#7a746c',
 };
 
 type CategoryCatalogEntry = {
@@ -64,34 +69,145 @@ export const CATEGORY_ICON_FALLBACK: Record<string, string> =
     MAJOR_CATEGORY_CATALOG.map((entry) => [entry.id, entry.icon])
   );
 
-export const CATEGORY_ADMIN_ICON_OPTIONS = [
-  ...new Set([
-    ...MAJOR_CATEGORY_CATALOG.map((entry) => entry.icon),
-    'Heart',
-    'Leaf',
-    'Briefcase',
-  ]),
+const ICON_CANDIDATES = [
+  ...MAJOR_CATEGORY_CATALOG.map((entry) => entry.icon),
+  'Star',
+  'Heart',
+  'Leaf',
+  'Briefcase',
+  'Coffee',
+  'Pizza',
+  'Wine',
+  'Cake',
+  'IceCreamCone',
+  'Utensils',
+  'Soup',
+  'Plane',
+  'Train',
+  'Car',
+  'Bike',
+  'Ship',
+  'House',
+  'Building2',
+  'Store',
+  'Hotel',
+  'Cat',
+  'Dog',
+  'Fish',
+  'Bird',
+  'Flower2',
+  'TreePine',
+  'Mic',
+  'Headphones',
+  'Podcast',
+  'Clapperboard',
+  'Book',
+  'Library',
+  'Newspaper',
+  'Pen',
+  'Pencil',
+  'Brush',
+  'Dumbbell',
+  'Trophy',
+  'Medal',
+  'Flag',
+  'Globe',
+  'Compass',
+  'Mountain',
+  'Sun',
+  'Moon',
+  'Cloud',
+  'Smartphone',
+  'Laptop',
+  'Monitor',
+  'Wifi',
+  'Bot',
+  'Gift',
+  'ShoppingBag',
+  'Ticket',
+  'Gem',
+  'Users',
+  'Smile',
+  'MessageCircle',
+  'Flame',
+  'Zap',
+  'Rocket',
+  'Popcorn',
+  'Beer',
+  'Backpack',
+  'Tent',
+  'Guitar',
+  'Drum',
+  'Puzzle',
+  'Dice5',
+  'Atom',
+  'FlaskConical',
+  'Stethoscope',
+  'Hammer',
+  'Paintbrush',
+  'Image',
+  'Music2',
+  'Swords',
+  'Skull',
+  'Church',
+  'Castle',
+  'Glasses',
+  'Scissors',
+  'Baby',
+  'Footprints',
+  'Volleyball',
+  'ChefHat',
+  'Croissant',
+  'Salad',
 ];
 
+function isPalette(value: CategoryPalette | null | undefined): value is CategoryPalette {
+  return Boolean(
+    value &&
+      HEX_COLOR.test(value.from) &&
+      HEX_COLOR.test(value.to) &&
+      HEX_COLOR.test(value.accent)
+  );
+}
+
+/** DB の色があればそれを使い、無ければジャンル ID の既定色に戻す */
+export function resolveCategoryPalette(
+  majorCategoryId?: string,
+  palette?: CategoryPalette | null
+): CategoryPalette | undefined {
+  if (isPalette(palette)) {
+    return {
+      from: palette.from.toLowerCase(),
+      to: palette.to.toLowerCase(),
+      accent: palette.accent.toLowerCase(),
+    };
+  }
+  if (majorCategoryId && CATEGORY_PALETTE[majorCategoryId]) {
+    return CATEGORY_PALETTE[majorCategoryId];
+  }
+  return undefined;
+}
+
 export function categoryVisualStyle(
-  majorCategoryId: string | undefined
+  majorCategoryId?: string,
+  palette?: CategoryPalette | null
 ): CSSProperties | undefined {
-  if (!majorCategoryId) return undefined;
-  const palette = CATEGORY_PALETTE[majorCategoryId];
-  if (!palette) return undefined;
+  const resolved = resolveCategoryPalette(majorCategoryId, palette);
+  if (!resolved) return undefined;
   return {
-    '--cat-from': palette.from,
-    '--cat-to': palette.to,
-    '--cat-accent': palette.accent,
+    '--cat-from': resolved.from,
+    '--cat-to': resolved.to,
+    '--cat-accent': resolved.accent,
   } as CSSProperties;
 }
 
-/** 投稿カードに付与する見た目クラス（ジャンル優先、未設定時は従来のトーン） */
+/** 投稿カードに付与する見た目クラス（ジャンルの色があれば tint、無ければ従来のトーン） */
 export function postCardVisualClass(
   majorCategoryId: string | undefined,
-  fallbackSeed: string
+  fallbackSeed: string,
+  palette?: CategoryPalette | null
 ): string {
-  if (majorCategoryId && CATEGORY_PALETTE[majorCategoryId]) {
+  if (resolveCategoryPalette(majorCategoryId, palette)) {
     return 'category-tinted';
   }
   return cardTone(fallbackSeed);
@@ -118,4 +234,15 @@ export function resolveCategoryIcon(
     lookupLucideIcon(iconName) ??
     lookupLucideIcon(categoryId ? CATEGORY_ICON_FALLBACK[categoryId] : undefined)
   );
+}
+
+/** 管理画面で選べるアイコン。Lucide に無い名前は出さない */
+export const CATEGORY_ADMIN_ICON_OPTIONS = [
+  ...new Set(ICON_CANDIDATES.filter((name) => lookupLucideIcon(name))),
+];
+
+/** 管理画面の1色指定を、保存用の3フィールドにそろえる */
+export function solidCategoryPalette(color: string): CategoryPalette {
+  const hex = color.toLowerCase();
+  return { from: hex, to: hex, accent: hex };
 }

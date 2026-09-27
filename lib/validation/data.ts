@@ -34,7 +34,7 @@ export const createPostSchema = z.object({
   subCategoryId: idSchema.nullish(),
   tagIds: z.array(idSchema).max(20).optional(),
   title: z.string().trim().min(1).max(100),
-  description: z.string().trim().min(1).max(1000),
+  description: z.string().trim().max(1000),
   url: httpUrlSchema.optional(),
 });
 
@@ -67,10 +67,23 @@ export const reportReasonSchema = z.enum([
 
 export const reportDetailSchema = z.string().trim().max(1000);
 
+const hexColorSchema = z
+  .string()
+  .trim()
+  .regex(/^#[0-9A-Fa-f]{6}$/)
+  .transform((value) => value.toLowerCase());
+
 export const majorCategorySchema = z.object({
   id: idSchema,
   name: z.string().trim().min(1).max(50),
   icon: z.string().trim().max(50).optional(),
+  palette: z
+    .object({
+      from: hexColorSchema,
+      to: hexColorSchema,
+      accent: hexColorSchema,
+    })
+    .optional(),
   order: z.number().int().min(0).max(9999),
   isActive: z.boolean(),
 });

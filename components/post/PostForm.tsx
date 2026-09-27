@@ -11,7 +11,7 @@ import { CategoryPicker } from '@/components/search/CategoryPicker';
 import { getRepository } from '@/lib/data';
 import { useAuth } from '@/components/providers/AuthProvider';
 import { useTranslations } from '@/components/providers/LocaleProvider';
-import { PUBLIC_BOARD } from '@/lib/auth/public-board';
+import { ENFORCE_POST_FREQUENCY, PUBLIC_BOARD } from '@/lib/auth/public-board';
 import { useInvalidate, useMajorCategories, useSubCategories } from '@/lib/data/hooks';
 
 interface PostFormProps {
@@ -47,7 +47,7 @@ export function PostForm({ initialPost, onSubmit }: PostFormProps) {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!formData.majorCategoryId || !formData.title || !formData.description) {
+    if (!formData.majorCategoryId || !formData.title.trim()) {
       alert(t('post.requiredFields'));
       return;
     }
@@ -62,7 +62,8 @@ export function PostForm({ initialPost, onSubmit }: PostFormProps) {
 
     const repo = getRepository();
 
-    if (!isEdit && user) {
+    // いったん週1制限はオフ。戻すときは ENFORCE_POST_FREQUENCY を true にする。
+    if (ENFORCE_POST_FREQUENCY && !isEdit && user) {
       const frequency = await repo.checkPostFrequency(
         user.id,
         formData.majorCategoryId
@@ -160,7 +161,8 @@ export function PostForm({ initialPost, onSubmit }: PostFormProps) {
 
           <div className="space-y-2">
             <label className="block text-sm font-semibold">
-              {t('post.whyRecommend')} <span className="text-red-500">*</span>
+              {t('post.whyRecommend')}
+              <span className="ml-1 font-normal text-quiet">（任意）</span>
             </label>
             <Textarea
               name="description"
@@ -199,7 +201,8 @@ export function PostForm({ initialPost, onSubmit }: PostFormProps) {
             </Button>
           </div>
 
-          {!isEdit && user ? (
+          {/* いったん非表示。戻すときは ENFORCE_POST_FREQUENCY を true にする。 */}
+          {ENFORCE_POST_FREQUENCY && !isEdit && user ? (
             <div className="rounded-[14px] border border-line bg-soft/40 p-4">
               <p className="text-sm text-quiet">{t('post.frequencyNote')}</p>
             </div>

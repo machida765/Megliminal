@@ -59,7 +59,6 @@ export default function PostPage({ params }: PostPageProps) {
         subCategory={subCategory}
         isOwner={isOwner}
         onHidden={() => router.push('/')}
-        onDeleted={() => router.push('/')}
       />
       {SHOW_COMMENTS ? <CommentSection postId={post.id} /> : null}
     </div>

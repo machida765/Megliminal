@@ -3,20 +3,19 @@
 import type { RankingPeriod } from '@/types';
 import { Button } from '@/components/ui/button';
 import { useTranslations } from '@/components/providers/LocaleProvider';
+import { RANKING_PERIODS } from '@/lib/ranking';
 
 interface PeriodFilterProps {
   value: RankingPeriod;
   onChange: (period: RankingPeriod) => void;
 }
 
-const PERIODS: RankingPeriod[] = ['all', 'month', 'week'];
-
 export function PeriodFilter({ value, onChange }: PeriodFilterProps) {
   const { messages } = useTranslations();
 
   return (
     <div className="flex flex-wrap gap-2">
-      {PERIODS.map((period) => (
+      {RANKING_PERIODS.map((period) => (
         <Button
           key={period}
           type="button"

@@ -479,19 +479,15 @@
     color: var(--brand);
   }
 
-  /* ジャンル別カード（--cat-* は categoryVisualStyle が付ける） */
+  /* ジャンル別カード。背景は --cat-from の単色 */
   .category-tinted .card-visual {
-    background: linear-gradient(
-      145deg,
-      color-mix(in srgb, var(--cat-from), var(--surface) 35%) 0%,
-      color-mix(in srgb, var(--cat-to), var(--surface) 22%) 100%
-    );
+    background: color-mix(in srgb, var(--cat-from), var(--surface) 28%);
   }
   .category-tinted .card-visual-badge {
-    background: var(--cat-accent);
+    background: var(--cat-from);
   }
   .category-tinted .card-category-label {
-    color: var(--cat-accent);
+    color: var(--cat-from);
   }
 
   /* 未分類・旧トーン（フォールバック） */

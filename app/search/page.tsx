@@ -5,7 +5,7 @@
  * 投稿を一括取得し、条件は lib/search.ts でブラウザ側フィルタ。
  * 絞り込みは検索ボタン（または Enter）で確定。Suspense は useSearchParams（?q=）用。
  */
-import { Suspense, useState, useMemo, type FormEvent } from 'react';
+import { Suspense, useEffect, useRef, useState, useMemo, type FormEvent } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -19,17 +19,17 @@ import {
   SelectItem,
   SelectValue,
 } from '@/components/ui/select';
-import { useMajorCategories, usePosts, useSubCategories, useTags } from '@/lib/data/hooks';
+import { useMajorCategories, usePosts, useSubCategories } from '@/lib/data/hooks';
 import { useAuth } from '@/components/providers/AuthProvider';
 import { useTranslations } from '@/components/providers/LocaleProvider';
 import {
   defaultSearchFilters,
   filterAndSortPosts,
   type SearchFilters,
-  type SearchSort,
-  type TagMatch,
 } from '@/lib/search';
-import { type Tag } from '@/types';
+import { readSearchView, saveSearchView } from '@/lib/search-view';
+import { RANKING_PERIODS } from '@/lib/ranking';
+import { type RankingPeriod } from '@/types';
 import { getMessages } from '@/messages';
 import { DEFAULT_LOCALE } from '@/lib/i18n/config';
 import { PageHeader } from '@/components/layout/PageHeader';
@@ -40,9 +40,7 @@ function hasAdvancedFilters(filters: SearchFilters): boolean {
     filters.query.trim().length > 0 ||
     filters.period !== 'all' ||
     Boolean(filters.dateFrom) ||
-    Boolean(filters.dateTo) ||
-    filters.tagIds.length > 0 ||
-    filters.tagMatch === 'and'
+    Boolean(filters.dateTo)
   );
 }
 
@@ -68,12 +66,19 @@ function SearchPageInner() {
   const { user } = useAuth();
   const { categories } = useMajorCategories();
   const { subCategories } = useSubCategories();
-  const { tags } = useTags();
   const { posts, loading } = usePosts(user?.id);
   const [draft, setDraft] = useState<SearchFilters>(defaultSearchFilters);
   const [applied, setApplied] = useState<SearchFilters>(defaultSearchFilters);
   const [expanded, setExpanded] = useState(false);
   const [syncedQueryString, setSyncedQueryString] = useState<string | null>(null);
+  const [viewReady, setViewReady] = useState(false);
+  const pendingScrollY = useRef(0);
+  const scrollYRef = useRef(0);
+  const hrefRef = useRef('');
+  const didRestoreScroll = useRef(false);
+  if (typeof window !== 'undefined') {
+    hrefRef.current = `${window.location.pathname}${window.location.search}`;
+  }
 
   // URL の検索条件が変わったら、フォームと適用中の条件に取り込む
   const queryString = searchParams.toString();
@@ -82,14 +87,12 @@ function SearchPageInner() {
 
     const q = searchParams.get('q');
     const major = searchParams.get('major');
-    const tag = searchParams.get('tag');
 
-    if (q || major || tag) {
+    if (q || major) {
       const fromUrl = (prev: SearchFilters): SearchFilters => ({
         ...prev,
         query: q ?? prev.query,
         categoryId: major ?? prev.categoryId,
-        tagIds: tag ? [tag] : prev.tagIds,
       });
 
       setDraft(fromUrl);
@@ -105,14 +108,56 @@ function SearchPageInner() {
 
   const activeCategory = categories.find((c) => c.id === applied.categoryId);
   const activeSubCategory = subCategories.find((c) => c.id === applied.subCategoryId);
-  const activeTags = tags.filter((tag) => applied.tagIds.includes(tag.id));
   const hasExtraFilters =
     Boolean(applied.categoryId) ||
     Boolean(applied.subCategoryId) ||
-    applied.tagIds.length > 0 ||
     applied.period !== 'all' ||
     Boolean(applied.dateFrom) ||
     Boolean(applied.dateTo);
+
+  useEffect(() => {
+    const saved = readSearchView(window.location.pathname + window.location.search);
+    if (saved) {
+      setDraft(saved.draft);
+      setApplied(saved.applied);
+      setExpanded(saved.expanded);
+      pendingScrollY.current = saved.scrollY;
+      scrollYRef.current = saved.scrollY;
+    }
+    setViewReady(true);
+  }, []);
+
+  useEffect(() => {
+    if (!viewReady || loading || didRestoreScroll.current) return;
+    didRestoreScroll.current = true;
+    if (pendingScrollY.current > 0) {
+      window.scrollTo(0, pendingScrollY.current);
+    }
+  }, [viewReady, loading]);
+
+  useEffect(() => {
+    if (!viewReady) return;
+    const persist = () => {
+      saveSearchView({
+        href: hrefRef.current,
+        draft,
+        applied,
+        expanded,
+        scrollY: scrollYRef.current,
+      });
+    };
+    persist();
+    const onScroll = () => {
+      if (!window.location.pathname.startsWith('/search')) return;
+      scrollYRef.current = window.scrollY;
+      pendingScrollY.current = window.scrollY;
+    };
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => {
+      window.removeEventListener('scroll', onScroll);
+      persist();
+    };
+  }, [viewReady, draft, applied, expanded]);
 
   const customDateLabel = useMemo(
     () => formatSearchDateRangeLabel(applied.dateFrom, applied.dateTo, t),
@@ -126,15 +171,6 @@ function SearchPageInner() {
   const patchApplied = (partial: Partial<SearchFilters>) => {
     setDraft((prev) => ({ ...prev, ...partial }));
     setApplied((prev) => ({ ...prev, ...partial }));
-  };
-
-  const toggleDraftTag = (tagId: string) => {
-    setDraft((prev) => ({
-      ...prev,
-      tagIds: prev.tagIds.includes(tagId)
-        ? prev.tagIds.filter((id) => id !== tagId)
-        : [...prev.tagIds, tagId],
-    }));
   };
 
   const runSearch = (e?: FormEvent) => {
@@ -219,15 +255,6 @@ function SearchPageInner() {
               />
             </div>
 
-            <TagPicker
-              tags={tags}
-              selectedIds={draft.tagIds}
-              onToggle={toggleDraftTag}
-              match={draft.tagMatch}
-              onMatchChange={(tagMatch) => patchDraft({ tagMatch })}
-              labels={messages.search}
-            />
-
             <div>
               <p className="text-xs font-bold text-quiet mb-2">{t('search.postedAt')}</p>
               <SearchPeriodFilter
@@ -255,30 +282,26 @@ function SearchPageInner() {
           {loading
             ? '...'
             : t('search.resultCount', { count: filteredPosts.length })}
-          {applied.tagIds.length > 1 && (
-            <span className="ml-2 text-xs">
-              {t('search.tagMatchNote', {
-                mode:
-                  applied.tagMatch === 'and'
-                    ? messages.search.tagMatch.and
-                    : messages.search.tagMatch.or,
-              })}
-            </span>
-          )}
         </p>
         <div className="flex items-center gap-2">
-          <span className="text-xs font-bold text-quiet shrink-0">{t('common.sort')}</span>
+          <span className="text-xs font-bold text-quiet shrink-0">{t('search.periodLabel')}</span>
           <Select
-            value={applied.sort}
-            onValueChange={(v) => patchApplied({ sort: (v ?? 'newest') as SearchSort })}
+            value={applied.period}
+            onValueChange={(v) =>
+              patchApplied({
+                period: (v ?? 'all') as RankingPeriod,
+                dateFrom: null,
+                dateTo: null,
+              })
+            }
           >
             <SelectTrigger className="w-full sm:w-48 bg-white border-line">
-              <SelectValue />
+              <SelectValue>{messages.ranking.period[applied.period]}</SelectValue>
             </SelectTrigger>
             <SelectContent>
-              {(Object.keys(messages.search.sort) as SearchSort[]).map((value) => (
-                <SelectItem key={value} value={value}>
-                  {messages.search.sort[value]}
+              {RANKING_PERIODS.map((value) => (
+                <SelectItem key={value} value={value} label={messages.ranking.period[value]}>
+                  {messages.ranking.period[value]}
                 </SelectItem>
               ))}
             </SelectContent>
@@ -307,17 +330,6 @@ function SearchPageInner() {
               />
             )
           )}
-          {activeTags.map((tag) => (
-            <FilterChip
-              key={tag.id}
-              label={`#${tag.name}`}
-              onRemove={() =>
-                patchApplied({
-                  tagIds: applied.tagIds.filter((id) => id !== tag.id),
-                })
-              }
-            />
-          ))}
           {customDateLabel ? (
             <FilterChip
               label={customDateLabel}
@@ -371,74 +383,6 @@ function SearchPageInner() {
             )}
           </div>
         )}
-      </div>
-    </div>
-  );
-}
-
-function TagPicker({
-  tags,
-  selectedIds,
-  onToggle,
-  match,
-  onMatchChange,
-  labels,
-}: {
-  tags: Tag[];
-  selectedIds: string[];
-  onToggle: (tagId: string) => void;
-  match: TagMatch;
-  onMatchChange: (match: TagMatch) => void;
-  labels: {
-    tags: string;
-    tagMatch: { or: string; and: string };
-  };
-}) {
-  return (
-    <div>
-      <div className="flex flex-wrap items-center justify-between gap-2 mb-2">
-        <p className="text-xs font-bold text-quiet">{labels.tags}</p>
-        {onMatchChange && match && (
-          <div className="flex gap-1">
-            <Button
-              type="button"
-              size="sm"
-              variant={match === 'or' ? 'flat' : 'flat-outline'}
-              onClick={() => onMatchChange('or')}
-            >
-              {labels.tagMatch.or}
-            </Button>
-            <Button
-              type="button"
-              size="sm"
-              variant={match === 'and' ? 'flat' : 'flat-outline'}
-              onClick={() => onMatchChange('and')}
-            >
-              {labels.tagMatch.and}
-            </Button>
-          </div>
-        )}
-      </div>
-      <div className="flex flex-wrap gap-2">
-        {tags
-          .filter((t) => t.isActive)
-          .map((tag) => {
-            const on = selectedIds.includes(tag.id);
-            return (
-              <button
-                key={tag.id}
-                type="button"
-                onClick={() => onToggle(tag.id)}
-                className={`text-sm px-3 py-1 border ${
-                  on
-                    ? 'bg-ink text-brand-ink border-ink'
-                    : 'bg-surface text-ink border-line hover:bg-soft/50'
-                }`}
-              >
-                #{tag.name}
-              </button>
-            );
-          })}
       </div>
     </div>
   );

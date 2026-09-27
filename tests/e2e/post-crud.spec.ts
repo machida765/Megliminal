@@ -1,6 +1,6 @@
 import { captureDialogs, expect, login, test, type E2EUser } from './fixtures';
 import type { Page } from '@playwright/test';
-import { PUBLIC_BOARD, SHOW_COMMENTS } from '@/lib/auth/public-board';
+import { ENFORCE_POST_FREQUENCY, PUBLIC_BOARD, SHOW_COMMENTS } from '@/lib/auth/public-board';
 
 /** CategoryPicker（base-ui Select）で最初の大ジャンルを選ぶ */
 async function pickFirstMajorCategory(page: Page): Promise<void> {
@@ -91,7 +91,7 @@ test.describe('投稿 CRUD', () => {
   });
 
   test('同じ大ジャンルには週に1回しか投稿できない', async ({ page, user }) => {
-    test.skip(PUBLIC_BOARD, 'ログインページはいったん非公開');
+    test.skip(PUBLIC_BOARD || !ENFORCE_POST_FREQUENCY, 'ログインと週1制限はいったんオフ');
     await login(page, user);
     await createPost(page, `E2E 1本目 ${Date.now()}`, '1本目の説明文です。');
 
@@ -120,22 +120,15 @@ test.describe('投稿 CRUD', () => {
     await expect(page.getByText('編集後の説明文です。')).toBeVisible();
   });
 
-  test('投稿を削除できる', async ({ page, user }) => {
+  test('投稿者でも詳細から削除できない', async ({ page, user }) => {
     test.skip(PUBLIC_BOARD, 'ログインページはいったん非公開');
     const title = `E2E 削除 ${Date.now()}`;
 
     await login(page, user);
-    await createPost(page, title, '削除される投稿の説明文です。');
-    const postUrl = await openPost(page, user, title);
+    await createPost(page, title, '削除ボタンが出ない投稿の説明文です。');
+    await openPost(page, user, title);
 
-    await page.getByRole('button', { name: '削除する' }).click();
-    // 削除後は onDeleted でプロフィールへ遷移する。この遷移が終わる前に
-    // page.goto すると削除リクエストや遷移とぶつかるので、描画まで待つ。
-    await expect(page).toHaveURL(new RegExp(`/profile/${user.id}`));
-    await expect(page.getByText('まだ投稿がありません')).toBeVisible();
-
-    await page.goto(postUrl);
-    await expect(page.getByText('投稿が見つかりません')).toBeVisible();
+    await expect(page.getByRole('button', { name: '削除する' })).toHaveCount(0);
   });
 
   test('他人の投稿には編集・削除ボタンが出ない', async ({ page, browser, user }) => {

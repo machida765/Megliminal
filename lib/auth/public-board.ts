@@ -11,6 +11,12 @@ export const SHOW_USER_IDENTITY = !PUBLIC_BOARD;
 /** 投稿へのコメント。いったんオフ。戻すときは true。 */
 export const SHOW_COMMENTS = false;
 
+/**
+ * 大ジャンルごとの週1投稿。いったんオフ。
+ * 戻すときは true にし、DB の enforce_post_frequency も週1判定に戻す。
+ */
+export const ENFORCE_POST_FREQUENCY = false;
+
 export const ANONYMOUS_AUTHOR_ID = 'anonymous';
 export const ANONYMOUS_AUTHOR_NAME = '匿名';
 

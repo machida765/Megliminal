@@ -1,20 +1,55 @@
 import type { Like, Post, RankingPeriod } from '@/types';
 
-export function getPeriodStart(period: RankingPeriod): Date | null {
-  const now = new Date();
-  if (period === 'all') return null;
-  if (period === 'week') {
-    const start = new Date(now);
-    start.setDate(start.getDate() - 7);
-    return start;
-  }
-  const start = new Date(now);
-  start.setMonth(start.getMonth() - 1);
+export const RANKING_PERIODS: RankingPeriod[] = [
+  'today',
+  'week',
+  'month',
+  'quarter',
+  'half',
+  'all',
+];
+
+function startOfDay(date: Date): Date {
+  const start = new Date(date);
+  start.setHours(0, 0, 0, 0);
   return start;
 }
 
-export function isWithinPeriod(dateIso: string, period: RankingPeriod): boolean {
-  const start = getPeriodStart(period);
+/** 今日・今週（月曜始まり）・今月・今四半期・今半期の開始。全期間は null。 */
+export function getPeriodStart(period: RankingPeriod, now: Date = new Date()): Date | null {
+  if (period === 'all') return null;
+
+  const start = startOfDay(now);
+  if (period === 'today') return start;
+
+  if (period === 'week') {
+    const day = start.getDay();
+    const daysFromMonday = day === 0 ? 6 : day - 1;
+    start.setDate(start.getDate() - daysFromMonday);
+    return start;
+  }
+
+  if (period === 'month') {
+    start.setDate(1);
+    return start;
+  }
+
+  if (period === 'quarter') {
+    const month = start.getMonth();
+    start.setMonth(month - (month % 3), 1);
+    return start;
+  }
+
+  start.setMonth(start.getMonth() < 6 ? 0 : 6, 1);
+  return start;
+}
+
+export function isWithinPeriod(
+  dateIso: string,
+  period: RankingPeriod,
+  now: Date = new Date()
+): boolean {
+  const start = getPeriodStart(period, now);
   if (!start) return true;
   return new Date(dateIso) >= start;
 }

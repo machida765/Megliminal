@@ -120,6 +120,24 @@ describe.skipIf(!reachable)('RLS / 権限', () => {
       expect(still?.id).toBe(alicePostId);
     });
 
+    it('本人でも自分の投稿は削除できない', async () => {
+      const { data, error } = await alice.client
+        .from('posts')
+        .delete()
+        .eq('id', alicePostId)
+        .select('id');
+
+      expect(error).toBeNull();
+      expect(data).toEqual([]);
+
+      const { data: still } = await admin
+        .from('posts')
+        .select('id')
+        .eq('id', alicePostId)
+        .maybeSingle();
+      expect(still?.id).toBe(alicePostId);
+    });
+
     it('本人は自分の投稿を更新できる', async () => {
       const { data, error } = await alice.client
         .from('posts')

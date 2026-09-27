@@ -63,9 +63,9 @@ export const TERMS_SECTIONS: LegalSectionContent[] = [
   {
     title: '第9条（お問い合わせ）',
     paragraphs: [
-      '本規約に関するお問い合わせは、本サービス内の連絡手段（準備中）または運営者が指定する方法で受け付けます。',
+      '本規約に関するお問い合わせは、本サービスの要望・お問い合わせページ（/contact）から受け付けます。',
     ],
   },
 ];
 
-export const TERMS_LAST_UPDATED = '2026年8月22日';
+export const TERMS_LAST_UPDATED = '2026年9月23日';

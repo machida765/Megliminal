@@ -24,6 +24,9 @@ export function Footer() {
         <Link href="/privacy" prefetch={false} className="hover:underline underline-offset-2">
           {t('legal.privacy')}
         </Link>
+        <Link href="/contact" prefetch={false} className="hover:underline underline-offset-2">
+          {t('legal.contact')}
+        </Link>
         <Link href="/credits" prefetch={false} className="hover:underline underline-offset-2">
           {t('legal.credits')}
         </Link>

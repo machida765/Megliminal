@@ -1,9 +1,9 @@
 'use client';
 
-import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { Post, MajorCategory, SubCategory } from '@/types';
 import { Button } from '@/components/ui/button';
-import { ExternalLink, ArrowLeft, Trash2 } from 'lucide-react';
+import { ExternalLink, ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
 import { BookmarkButton } from '@/components/post/BookmarkButton';
 import { LikeButton } from '@/components/post/LikeButton';
@@ -11,10 +11,9 @@ import { PostModerationActions } from '@/components/moderation/PostModerationAct
 import { useTranslations } from '@/components/providers/LocaleProvider';
 import { UserAvatar } from '@/components/user/UserAvatar';
 import { LOCALE_DATE_FORMAT } from '@/lib/i18n/config';
-import { getRepository } from '@/lib/data';
-import { useInvalidate } from '@/lib/data/hooks';
 import { getSafeHttpUrl } from '@/lib/validation/data';
-import { isIdentifiableUserId, SHOW_USER_IDENTITY } from '@/lib/auth/public-board';
+import { isIdentifiableUserId, PUBLIC_BOARD, SHOW_USER_IDENTITY } from '@/lib/auth/public-board';
+import { readNavFrom } from '@/lib/search-view';
 
 interface PostDetailProps {
   post: Post;
@@ -22,7 +21,6 @@ interface PostDetailProps {
   subCategory?: SubCategory;
   isOwner?: boolean;
   onHidden?: () => void;
-  onDeleted?: () => void;
 }
 
 export function PostDetail({
@@ -31,12 +29,10 @@ export function PostDetail({
   subCategory,
   isOwner = false,
   onHidden,
-  onDeleted,
 }: PostDetailProps) {
   const { t, locale } = useTranslations();
-  const invalidate = useInvalidate();
+  const router = useRouter();
   const safePostUrl = getSafeHttpUrl(post.url);
-  const [deleting, setDeleting] = useState(false);
   const otherLabel = t('category.other');
   const categoryLabel = subCategory
     ? `${category?.name ?? otherLabel} › ${subCategory.name}`
@@ -51,52 +47,34 @@ export function PostDetail({
     }
   );
 
-  const handleDelete = async () => {
-    if (!confirm(t('post.deleteConfirm'))) return;
-
-    setDeleting(true);
-    try {
-      await getRepository().deletePost(post.id);
-      invalidate('posts', 'post', 'postsByUser', 'postRankings');
-      onDeleted?.();
-    } catch {
-      alert(t('post.deleteFailed'));
-      setDeleting(false);
+  const handleBack = () => {
+    const from = readNavFrom();
+    if (from?.startsWith('/search')) {
+      router.push(from);
+      return;
     }
+    router.push('/');
   };
 
   return (
     <>
       <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
-        <Link href="/">
-          <Button variant="ghost" className="gap-2">
-            <ArrowLeft className="w-4 h-4" />
-            {t('post.back')}
-          </Button>
-        </Link>
-        <div className="flex flex-wrap items-center gap-2">
-          <BookmarkButton postId={post.id} />
-          {isOwner && (
-            <>
+        <Button type="button" variant="ghost" className="gap-2" onClick={handleBack}>
+          <ArrowLeft className="w-4 h-4" />
+          {t('post.back')}
+        </Button>
+        {!PUBLIC_BOARD ? (
+          <div className="flex flex-wrap items-center gap-2">
+            <BookmarkButton postId={post.id} />
+            {isOwner ? (
               <Link href={`/post/${post.id}/edit`}>
                 <Button variant="outline" size="sm">
                   {t('post.edit')}
                 </Button>
               </Link>
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                className="gap-1.5 text-red-700 border-red-200 hover:bg-red-50"
-                disabled={deleting}
-                onClick={handleDelete}
-              >
-                <Trash2 className="w-4 h-4" />
-                {deleting ? t('post.deleting') : t('post.delete')}
-              </Button>
-            </>
-          )}
-        </div>
+            ) : null}
+          </div>
+        ) : null}
       </div>
 
       <article className="rounded-[14px] border border-line bg-surface p-6 sm:p-8 mb-6">
@@ -129,10 +107,14 @@ export function PostDetail({
             <p className="text-sm text-quiet">{formattedDate}</p>
           </div>
         </div>
-        <h2 className="font-display font-semibold mb-2">{t('post.whyRecommend')}</h2>
-        <p className="text-base leading-relaxed text-ink whitespace-pre-wrap mb-6">
-          {post.description}
-        </p>
+        {post.description.trim() ? (
+          <>
+            <h2 className="font-display font-semibold mb-2">{t('post.whyRecommend')}</h2>
+            <p className="text-base leading-relaxed text-ink whitespace-pre-wrap mb-6">
+              {post.description}
+            </p>
+          </>
+        ) : null}
         <div className="mb-6">
           <LikeButton postId={post.id} likeCount={post.likeCount} />
         </div>

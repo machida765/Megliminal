@@ -62,6 +62,33 @@ type SupabaseReportRow = {
   created_at: string;
 };
 
+type MajorCategoryRow = {
+  id: string;
+  name: string;
+  icon: string | null;
+  color_from: string | null;
+  color_to: string | null;
+  color_accent: string | null;
+  sort_order: number;
+  is_active: boolean;
+};
+
+function mapMajorCategoryRow(row: MajorCategoryRow): MajorCategory {
+  const palette =
+    row.color_from && row.color_to && row.color_accent
+      ? { from: row.color_from, to: row.color_to, accent: row.color_accent }
+      : undefined;
+
+  return {
+    id: row.id,
+    name: row.name,
+    icon: row.icon ?? undefined,
+    palette,
+    order: row.sort_order,
+    isActive: row.is_active,
+  };
+}
+
 function mapReportRow(row: SupabaseReportRow): Report {
   return {
     id: row.id,
@@ -228,7 +255,7 @@ export class SupabaseDataRepository implements DataRepository {
   async getMajorCategories(): Promise<MajorCategory[]> {
     const { data, error } = await this.client
       .from('major_categories')
-      .select('id, name, icon, sort_order, is_active')
+      .select('id, name, icon, color_from, color_to, color_accent, sort_order, is_active')
       .order('sort_order');
 
     if (error) {
@@ -236,13 +263,7 @@ export class SupabaseDataRepository implements DataRepository {
       return [];
     }
 
-    return (data ?? []).map((row) => ({
-      id: row.id,
-      name: row.name,
-      icon: row.icon ?? undefined,
-      order: row.sort_order,
-      isActive: row.is_active,
-    }));
+    return (data ?? []).map((row) => mapMajorCategoryRow(row));
   }
 
   async getSubCategories(): Promise<SubCategory[]> {
@@ -494,7 +515,8 @@ export class SupabaseDataRepository implements DataRepository {
 
   async deletePosts(ids: string[]): Promise<void> {
     if (ids.length === 0) return;
-    const validatedIds = await this.assertCanChangePosts(ids, true);
+    await this.assertIsAdmin();
+    const validatedIds = [...new Set(ids.map((id) => postIdSchema.parse(id)))];
 
     const { error } = await this.client
       .from('posts')
@@ -542,21 +564,18 @@ export class SupabaseDataRepository implements DataRepository {
         id: validated.id,
         name: validated.name,
         icon: validated.icon ?? null,
+        color_from: validated.palette?.from ?? null,
+        color_to: validated.palette?.to ?? null,
+        color_accent: validated.palette?.accent ?? null,
         sort_order: validated.order,
         is_active: validated.isActive,
       })
-      .select('id, name, icon, sort_order, is_active')
+      .select('id, name, icon, color_from, color_to, color_accent, sort_order, is_active')
       .single();
 
     if (error || !data) throw error ?? new Error('カテゴリの保存に失敗しました。');
 
-    return {
-      id: data.id,
-      name: data.name,
-      icon: data.icon ?? undefined,
-      order: data.sort_order,
-      isActive: data.is_active,
-    };
+    return mapMajorCategoryRow(data);
   }
 
   async deleteMajorCategory(id: string): Promise<void> {
@@ -585,7 +604,7 @@ export class SupabaseDataRepository implements DataRepository {
 
     const { data: existing, error: fetchError } = await this.client
       .from('major_categories')
-      .select('id, name, icon, is_active')
+      .select('id, name, icon, color_from, color_to, color_accent, is_active')
       .in('id', validatedIds);
 
     if (fetchError) throw fetchError;
@@ -600,6 +619,9 @@ export class SupabaseDataRepository implements DataRepository {
         id: row.id,
         name: row.name,
         icon: row.icon,
+        color_from: row.color_from,
+        color_to: row.color_to,
+        color_accent: row.color_accent,
         is_active: row.is_active,
         sort_order: index,
       };

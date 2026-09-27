@@ -61,6 +61,9 @@ create table public.major_categories (
   id text primary key,
   name text not null,
   icon text,
+  color_from text check (color_from is null or color_from ~ '^#[0-9A-Fa-f]{6}$'),
+  color_to text check (color_to is null or color_to ~ '^#[0-9A-Fa-f]{6}$'),
+  color_accent text check (color_accent is null or color_accent ~ '^#[0-9A-Fa-f]{6}$'),
   sort_order int not null default 0,
   is_active boolean not null default true
 );
@@ -177,6 +180,65 @@ create unique index reports_post_reporter_key_unique
   where reporter_key is not null;
 
 create index reports_status_created_at_idx on public.reports(status, created_at desc);
+
+-- ─────────────────────────────────────────
+-- inquiries（要望・問い合わせ。挿入はサーバー API のみ。一覧は admin）
+-- ─────────────────────────────────────────
+create table public.inquiries (
+  id uuid primary key default gen_random_uuid(),
+  kind text not null check (kind in ('request', 'inquiry', 'bug', 'other')),
+  name text check (name is null or char_length(name) between 1 and 80),
+  email text not null check (char_length(email) between 3 and 254),
+  message text not null check (char_length(message) between 1 and 2000),
+  status text not null default 'open' check (status in ('open', 'closed')),
+  user_id uuid references public.profiles(id) on delete set null,
+  ip_hash text check (ip_hash is null or char_length(ip_hash) = 64),
+  created_at timestamptz not null default now(),
+  closed_at timestamptz
+);
+
+create index inquiries_status_created_at_idx
+  on public.inquiries (status, created_at desc);
+
+create index inquiries_email_created_at_idx
+  on public.inquiries (email, created_at desc);
+
+create index inquiries_ip_hash_created_at_idx
+  on public.inquiries (ip_hash, created_at desc);
+
+revoke all on table public.inquiries from anon;
+revoke insert, delete on table public.inquiries from authenticated;
+
+-- 管理画面からは状態だけ変えられる。本文・連絡先は残す。
+create or replace function public.protect_inquiry_content()
+returns trigger
+language plpgsql
+as $$
+begin
+  if auth.uid() is not null then
+    new.id := old.id;
+    new.kind := old.kind;
+    new.name := old.name;
+    new.email := old.email;
+    new.message := old.message;
+    new.user_id := old.user_id;
+    new.ip_hash := old.ip_hash;
+    new.created_at := old.created_at;
+    if new.status = 'open' then
+      new.closed_at := null;
+    elsif new.status = 'closed' and old.status is distinct from 'closed' then
+      new.closed_at := now();
+    else
+      new.closed_at := old.closed_at;
+    end if;
+  end if;
+  return new;
+end;
+$$;
+
+create trigger inquiries_protect_content
+  before update on public.inquiries
+  for each row execute function public.protect_inquiry_content();
 
 -- ─────────────────────────────────────────
 -- hidden_posts（自分のフィードからのみ非表示）
@@ -306,6 +368,7 @@ alter table public.likes enable row level security;
 alter table public.comments enable row level security;
 alter table public.bookmarks enable row level security;
 alter table public.reports enable row level security;
+alter table public.inquiries enable row level security;
 alter table public.hidden_posts enable row level security;
 
 -- profiles: 閲覧は公開。更新は本人のみ。role はトリガーで固定。INSERT は登録トリガーのみ。
@@ -342,7 +405,7 @@ create policy "tags_write_admin" on public.tags
   using (public.is_admin())
   with check (public.is_admin());
 
--- posts: 編集は本人のみ。削除は本人または admin。なりすまし作成は不可。
+-- posts: 編集は本人のみ。削除は admin のみ。なりすまし作成は不可。
 create policy "posts_select_all" on public.posts
   for select using (true);
 
@@ -356,9 +419,6 @@ create policy "posts_update_own" on public.posts
   for update
   using (auth.uid() = user_id)
   with check (auth.uid() = user_id);
-
-create policy "posts_delete_own" on public.posts
-  for delete using (auth.uid() = user_id);
 
 create policy "posts_delete_admin" on public.posts
   for delete using (public.is_admin());
@@ -451,6 +511,15 @@ create policy "reports_update_admin" on public.reports
 create policy "reports_delete_admin" on public.reports
   for delete using (public.is_admin());
 
+-- inquiries: 閲覧・状態更新は admin のみ。挿入は service_role（RLS 対象外）。
+create policy "inquiries_select_admin" on public.inquiries
+  for select using (public.is_admin());
+
+create policy "inquiries_update_admin" on public.inquiries
+  for update
+  using (public.is_admin())
+  with check (public.is_admin());
+
 -- ─────────────────────────────────────────
 -- 初期データ（大カテゴリ・タグ）
 -- dummy.ts と同じ内容
@@ -481,6 +550,40 @@ insert into public.major_categories (id, name, icon, sort_order, is_active) valu
   ('region',      '地域',            'MapPinned',        23, true),
   ('art',         '芸術',            'Palette',          24, true),
   ('other',       'その他',          'MoreHorizontal',   25, true);
+
+update public.major_categories as category
+set
+  color_from = seed.color_from,
+  color_to = seed.color_to,
+  color_accent = seed.color_accent
+from (values
+  ('youtube',   '#ff6b6b', '#c0392b', '#b83232'),
+  ('books',     '#d4a574', '#8b6914', '#8b5a2b'),
+  ('manga',     '#e8a090', '#b45c4a', '#b45c4a'),
+  ('movies',    '#9b8fd9', '#5c4d8a', '#5c4d8a'),
+  ('anime',     '#f0a0c8', '#c45a96', '#c45a96'),
+  ('drama',     '#b8a0d4', '#6e4e9a', '#6e4e9a'),
+  ('music',     '#6ecfc9', '#2a7a7a', '#2a7a7a'),
+  ('games',     '#7bc67e', '#3d7a4a', '#3d7a4a'),
+  ('radio',     '#c8b070', '#7a6828', '#7a6828'),
+  ('apps',      '#7eb0e8', '#3a6ea5', '#3a6ea5'),
+  ('food',      '#f0b07a', '#c4763a', '#c4763a'),
+  ('gadgets',   '#a8b4c4', '#5a6578', '#5a6578'),
+  ('spots',     '#6ecfaa', '#2d8a6e', '#2d8a6e'),
+  ('photo',     '#8aa8c8', '#3d5a78', '#3d5a78'),
+  ('fashion',   '#d4a0b8', '#9a5a78', '#9a5a78'),
+  ('streaming', '#c080d0', '#7a4090', '#7a4090'),
+  ('theater',   '#d090a0', '#8a4058', '#8a4058'),
+  ('doujin',    '#d4a070', '#8a5830', '#8a5830'),
+  ('occult',    '#8a7aa8', '#4a3d68', '#4a3d68'),
+  ('creatures', '#a8c478', '#5a7a38', '#5a7a38'),
+  ('culture',   '#d4b878', '#8a6a28', '#8a6a28'),
+  ('academia',  '#8ab0d4', '#3d6288', '#3d6288'),
+  ('region',    '#7cbc78', '#3a7a40', '#3a7a40'),
+  ('art',       '#e0a070', '#a05a30', '#a05a30'),
+  ('other',     '#c4b8aa', '#7a746c', '#7a746c')
+) as seed(id, color_from, color_to, color_accent)
+where category.id = seed.id;
 
 insert into public.sub_categories (id, major_category_id, name, sort_order, is_active) values
   ('yt-education',       'youtube', '解説・教育',       1, true),

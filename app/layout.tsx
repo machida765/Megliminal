@@ -1,7 +1,9 @@
 import type { Metadata, Viewport } from "next";
+import { Suspense } from "react";
 import { Noto_Sans_JP, Shippori_Mincho } from "next/font/google";
 import { Footer } from "@/components/layout/Footer";
 import { Navbar } from "@/components/layout/Navbar";
+import { RouteMemory } from "@/components/layout/RouteMemory";
 import { AuthProvider } from "@/components/providers/AuthProvider";
 import { LocaleProvider } from "@/components/providers/LocaleProvider";
 import { QueryProvider } from "@/components/providers/QueryProvider";
@@ -51,6 +53,9 @@ export default function RootLayout({
         <QueryProvider>
           <LocaleProvider locale={DEFAULT_LOCALE}>
             <AuthProvider>
+              <Suspense fallback={null}>
+                <RouteMemory />
+              </Suspense>
               <Navbar />
               <main className="flex-1">{children}</main>
               <Footer />

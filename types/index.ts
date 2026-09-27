@@ -4,10 +4,18 @@ import { getRankingPeriodLabels, getReportReasonLabels } from '@/lib/i18n/labels
 
 export type UserRole = 'user' | 'admin';
 
+/** 投稿カードの背景グラデーションとラベル色 */
+export type CategoryPalette = {
+  from: string;
+  to: string;
+  accent: string;
+};
+
 export type MajorCategory = {
   id: string;
   name: string;
   icon?: string;
+  palette?: CategoryPalette;
   order: number;
   isActive: boolean;
 };
@@ -80,8 +88,8 @@ export type PostFrequencyCheck = {
   daysRemaining?: number;
 };
 
-/** ランキング期間 */
-export type RankingPeriod = 'all' | 'month' | 'week';
+/** ランキング・検索の期間 */
+export type RankingPeriod = 'today' | 'week' | 'month' | 'quarter' | 'half' | 'all';
 
 /** 投稿ランキング行 */
 export type PostRankingEntry = {

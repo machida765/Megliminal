@@ -32,46 +32,43 @@ function like(id: string, postId: string, createdAt: string): Like {
   return { id, postId, userId: `u-${id}`, createdAt };
 }
 
+const FIXED_NOW = new Date(2026, 8, 27, 15, 0, 0);
+
 describe('getPeriodStart', () => {
   it('all は null', () => {
-    expect(getPeriodStart('all')).toBeNull();
+    expect(getPeriodStart('all', FIXED_NOW)).toBeNull();
   });
 
-  it('week は7日前あたり', () => {
-    const start = getPeriodStart('week')!;
-    const diffDays = (Date.now() - start.getTime()) / (24 * 60 * 60 * 1000);
-    expect(diffDays).toBeGreaterThan(6.9);
-    expect(diffDays).toBeLessThan(7.1);
-  });
-
-  it('month は1か月ぶん（28〜31日）さかのぼる', () => {
-    const now = Date.now();
-    const start = getPeriodStart('month')!;
-    const diffDays = (now - start.getTime()) / (24 * 60 * 60 * 1000);
-    expect(diffDays).toBeGreaterThanOrEqual(27.9);
-    expect(diffDays).toBeLessThanOrEqual(31.1);
+  it('カレンダー上の区切りを返す', () => {
+    expect(getPeriodStart('today', FIXED_NOW)).toEqual(new Date(2026, 8, 27));
+    expect(getPeriodStart('week', FIXED_NOW)).toEqual(new Date(2026, 8, 21));
+    expect(getPeriodStart('month', FIXED_NOW)).toEqual(new Date(2026, 8, 1));
+    expect(getPeriodStart('quarter', FIXED_NOW)).toEqual(new Date(2026, 6, 1));
+    expect(getPeriodStart('half', FIXED_NOW)).toEqual(new Date(2026, 6, 1));
   });
 });
 
 describe('isWithinPeriod', () => {
   it('all はいつでも true', () => {
-    expect(isWithinPeriod(daysAgo(3650), 'all')).toBe(true);
+    expect(isWithinPeriod(daysAgo(3650), 'all', FIXED_NOW)).toBe(true);
   });
 
-  it('週間は3日前を含む', () => {
-    expect(isWithinPeriod(daysAgo(3), 'week')).toBe(true);
+  it('今週の開始以降を含む', () => {
+    expect(isWithinPeriod(new Date(2026, 8, 21).toISOString(), 'week', FIXED_NOW)).toBe(true);
   });
 
-  it('週間は10日前を含まない', () => {
-    expect(isWithinPeriod(daysAgo(10), 'week')).toBe(false);
+  it('今週の開始より前は含まない', () => {
+    expect(isWithinPeriod(new Date(2026, 8, 20, 23, 59).toISOString(), 'week', FIXED_NOW)).toBe(
+      false
+    );
   });
 });
 
 describe('countLikesForPost', () => {
   const likes = [
-    like('a', 'p1', daysAgo(1)),
+    like('a', 'p1', new Date().toISOString()),
     like('b', 'p1', daysAgo(20)),
-    like('c', 'p2', daysAgo(1)),
+    like('c', 'p2', new Date().toISOString()),
   ];
 
   it('全期間は投稿単位で数える', () => {
@@ -89,9 +86,9 @@ describe('countLikesForPost', () => {
 
 describe('countPostsForUser', () => {
   const posts = [
-    post('p1', 'u1', daysAgo(1)),
+    post('p1', 'u1', new Date().toISOString()),
     post('p2', 'u1', daysAgo(40)),
-    post('p3', 'u2', daysAgo(1)),
+    post('p3', 'u2', new Date().toISOString()),
   ];
 
   it('全期間', () => {
@@ -106,9 +103,9 @@ describe('countPostsForUser', () => {
 describe('countLikesReceivedByUser', () => {
   const posts = [post('p1', 'u1', daysAgo(50)), post('p2', 'u2', daysAgo(50))];
   const likes = [
-    like('a', 'p1', daysAgo(1)),
+    like('a', 'p1', new Date().toISOString()),
     like('b', 'p1', daysAgo(40)),
-    like('c', 'p2', daysAgo(1)),
+    like('c', 'p2', new Date().toISOString()),
   ];
 
   it('自分の投稿が受けたいいねだけ数える', () => {

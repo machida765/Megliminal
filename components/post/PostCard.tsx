@@ -46,10 +46,8 @@ export function PostCard({
     : category?.name;
   const CategoryIcon = resolveCategoryIcon(category?.icon, category?.id);
 
-  const quote =
-    (post.description ?? '').length > 80
-      ? `${(post.description ?? '').slice(0, 80)}…`
-      : (post.description ?? '');
+  const quoteText = (post.description ?? '').trim();
+  const quote = quoteText.length > 80 ? `${quoteText.slice(0, 80)}…` : quoteText;
 
   return (
     <Link
@@ -57,11 +55,11 @@ export function PostCard({
       prefetch={false}
       className={cn(
         'recommendation-card',
-        postCardVisualClass(post.majorCategoryId, post.id),
+        postCardVisualClass(post.majorCategoryId, post.id, category?.palette),
         featured && 'card-featured',
         flat && 'is-flat'
       )}
-      style={categoryVisualStyle(post.majorCategoryId)}
+      style={categoryVisualStyle(post.majorCategoryId, category?.palette)}
     >
       <div className="card-visual">
         {majorLabel ? (
@@ -95,9 +93,13 @@ export function PostCard({
         {SHOW_USER_IDENTITY ? (
           <p className="text-[10px] text-quiet">{post.user.name}</p>
         ) : null}
-        <blockquote className="mt-3 mb-4 min-h-[42px] font-display text-xs leading-relaxed text-ink/80 line-clamp-3">
-          「{quote}」
-        </blockquote>
+        {quote ? (
+          <blockquote className="mt-3 mb-4 min-h-[42px] font-display text-xs leading-relaxed text-ink/80 line-clamp-3">
+            「{quote}」
+          </blockquote>
+        ) : (
+          <div className="mt-3 mb-4 min-h-[42px]" />
+        )}
         {SHOW_USER_IDENTITY ? (
           <div className="mt-auto flex items-center gap-2 text-[10px] text-quiet">
             <UserAvatar

@@ -2,6 +2,7 @@
 
 import type { RankingPeriod } from '@/types';
 import { Button } from '@/components/ui/button';
+import { RANKING_PERIODS } from '@/lib/ranking';
 import { DatePicker } from '@/components/search/DatePicker';
 import { useTranslations } from '@/components/providers/LocaleProvider';
 import type { TranslateFn } from '@/lib/i18n/translate';
@@ -14,8 +15,6 @@ type SearchPeriodFilterProps = {
   onDateFromChange: (value: string | null) => void;
   onDateToChange: (value: string | null) => void;
 };
-
-const PRESET_PERIODS: RankingPeriod[] = ['all', 'month', 'week'];
 
 export function SearchPeriodFilter({
   period,
@@ -58,7 +57,7 @@ export function SearchPeriodFilter({
       <div>
         <p className="text-xs text-quiet mb-2">{t('period.preset')}</p>
         <div className="flex flex-wrap gap-2">
-          {PRESET_PERIODS.map((p) => (
+          {RANKING_PERIODS.map((p) => (
             <Button
               key={p}
               type="button"

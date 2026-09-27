@@ -2,14 +2,21 @@
 
 /** 管理 `/admin`。カテゴリ操作はこのファイル。通報タブは AdminModeration。 */
 import { useState } from 'react';
+import Link from 'next/link';
 import { useQuery } from '@tanstack/react-query';
+import { CategoryLookFields } from '@/components/admin/CategoryLookFields';
 import { getRepository } from '@/lib/data';
-import { MajorCategory } from '@/types';
+import { useInvalidate } from '@/lib/data/hooks';
+import { MajorCategory, type CategoryPalette } from '@/types';
 import { AdminModeration } from '@/components/moderation/AdminModeration';
 import { useAuth } from '@/components/providers/AuthProvider';
 import { useTranslations } from '@/components/providers/LocaleProvider';
 import { canAccessAdmin } from '@/lib/auth/admin-access';
-import * as LucideIcons from 'lucide-react';
+import {
+  DEFAULT_CATEGORY_PALETTE,
+  resolveCategoryIcon,
+  resolveCategoryPalette,
+} from '@/lib/category-visual';
 import {
   ChevronUp,
   ChevronDown,
@@ -18,24 +25,12 @@ import {
   Eye,
   EyeOff,
   GripVertical,
+  Paintbrush,
   ShieldAlert,
 } from 'lucide-react';
 
-const ICON_OPTIONS = [
-  'Youtube', 'BookOpen', 'Film', 'Music', 'Gamepad2',
-  'Cpu', 'UtensilsCrossed', 'Lightbulb', 'MapPin',
-  'MoreHorizontal', 'Shirt', 'Heart', 'Star', 'Globe',
-  'Camera', 'Headphones', 'Dumbbell', 'Leaf', 'Briefcase',
-];
-
 function Icon({ name, className = 'w-4 h-4' }: { name?: string; className?: string }) {
-  if (!name) return null;
-  const C = (
-    LucideIcons as unknown as Record<
-      string,
-      React.ComponentType<{ className?: string }>
-    >
-  )[name];
+  const C = resolveCategoryIcon(name);
   return C ? <C className={className} /> : null;
 }
 
@@ -51,17 +46,56 @@ export default function AdminPage() {
     queryKey: ['majorCategories', 'admin'],
     queryFn: () => getRepository().getMajorCategories(),
   });
+  const invalidate = useInvalidate();
   const [newName, setNewName] = useState('');
   const [newIcon, setNewIcon] = useState('Star');
+  const [newPalette, setNewPalette] = useState<CategoryPalette>(DEFAULT_CATEGORY_PALETTE);
   const [addError, setAddError] = useState('');
   const [actionError, setActionError] = useState('');
   const [deleteTargetId, setDeleteTargetId] = useState<string | null>(null);
+  const [lookTargetId, setLookTargetId] = useState<string | null>(null);
+  const [lookDraft, setLookDraft] = useState<{ icon: string; palette: CategoryPalette } | null>(null);
+  const [savingLook, setSavingLook] = useState(false);
 
   const toMessage = (error: unknown, fallback: string) =>
     error instanceof Error && error.message ? error.message : fallback;
 
   const reload = async () => {
+    invalidate('majorCategories');
     await refetch();
+  };
+
+  const openLook = (category: MajorCategory) => {
+    if (lookTargetId === category.id) {
+      setLookTargetId(null);
+      setLookDraft(null);
+      return;
+    }
+    setLookTargetId(category.id);
+    setLookDraft({
+      icon: category.icon ?? 'MoreHorizontal',
+      palette: resolveCategoryPalette(category.id, category.palette) ?? DEFAULT_CATEGORY_PALETTE,
+    });
+  };
+
+  const saveLook = async (category: MajorCategory) => {
+    if (!lookDraft) return;
+    setSavingLook(true);
+    try {
+      await getRepository().upsertMajorCategory({
+        ...category,
+        icon: lookDraft.icon,
+        palette: lookDraft.palette,
+      });
+      await reload();
+      setLookTargetId(null);
+      setLookDraft(null);
+      setActionError('');
+    } catch (error) {
+      setActionError(toMessage(error, t('admin.categories.saveFailed')));
+    } finally {
+      setSavingLook(false);
+    }
   };
 
   const handleAdd = async () => {
@@ -79,6 +113,7 @@ export default function AdminPage() {
       id: `cat-${Date.now()}`,
       name: trimmed,
       icon: newIcon,
+      palette: newPalette,
       order: categories.length + 1,
       isActive: true,
     };
@@ -88,6 +123,7 @@ export default function AdminPage() {
       await reload();
       setNewName('');
       setNewIcon('Star');
+      setNewPalette(DEFAULT_CATEGORY_PALETTE);
       setAddError('');
       setActionError('');
     } catch (error) {
@@ -201,6 +237,12 @@ export default function AdminPage() {
           >
             {t('admin.tabs.moderation')}
           </button>
+          <Link
+            href="/admin/inquiries"
+            className="px-4 py-2 rounded-lg text-sm font-semibold text-quiet hover:text-ink hover:bg-soft"
+          >
+            {t('admin.inquiries.tab')}
+          </Link>
         </div>
 
         {tab === 'moderation' && <AdminModeration />}
@@ -226,20 +268,28 @@ export default function AdminPage() {
           </div>
 
           <div className="space-y-2">
-            {categories.map((cat, idx) => (
+            {categories.map((cat, idx) => {
+              const swatch = resolveCategoryPalette(cat.id, cat.palette) ?? DEFAULT_CATEGORY_PALETTE;
+              return (
               <div
                 key={cat.id}
                 className={`
-                  flex items-center gap-3 px-4 py-3 rounded-xl border transition-all
+                  rounded-xl border transition-all
                   ${cat.isActive
                     ? 'bg-surface border-line'
                     : 'bg-page border-line/50 opacity-50'}
                 `}
               >
+              <div className="flex items-center gap-3 px-4 py-3">
                 <GripVertical className="w-4 h-4 text-quiet flex-shrink-0" />
                 <span className="w-5 text-center text-xs text-quiet font-mono flex-shrink-0">
                   {cat.order}
                 </span>
+                <span
+                  className="h-7 w-7 flex-shrink-0 rounded-md border border-line"
+                  style={{ background: swatch.from }}
+                  title={t('admin.categories.colorFrom')}
+                />
                 <span className="w-7 flex items-center justify-center text-ink flex-shrink-0">
                   <Icon name={cat.icon} className="w-4 h-4" />
                 </span>
@@ -267,6 +317,14 @@ export default function AdminPage() {
                     <ChevronDown className="w-4 h-4" />
                   </button>
                   <button
+                    onClick={() => openLook(cat)}
+                    className="p-1.5 rounded-lg hover:bg-soft text-quiet hover:text-ink transition-colors"
+                    title={t('admin.categories.editLook')}
+                    aria-expanded={lookTargetId === cat.id}
+                  >
+                    <Paintbrush className="w-4 h-4" />
+                  </button>
+                  <button
                     onClick={() => handleToggleActive(cat.id)}
                     className="p-1.5 rounded-lg hover:bg-soft text-quiet hover:text-ink transition-colors"
                     title={cat.isActive ? t('admin.categories.hide') : t('admin.categories.show')}
@@ -282,7 +340,29 @@ export default function AdminPage() {
                   </button>
                 </div>
               </div>
-            ))}
+              {lookTargetId === cat.id && lookDraft ? (
+                <div className="space-y-4 border-t border-line px-4 py-4">
+                  <CategoryLookFields
+                    icon={lookDraft.icon}
+                    palette={lookDraft.palette}
+                    onIconChange={(icon) => setLookDraft((current) => current && { ...current, icon })}
+                    onPaletteChange={(palette) =>
+                      setLookDraft((current) => current && { ...current, palette })
+                    }
+                  />
+                  <button
+                    type="button"
+                    onClick={() => saveLook(cat)}
+                    disabled={savingLook}
+                    className="rounded-[14px] bg-brand px-4 py-2 text-sm font-semibold text-brand-ink hover:bg-brand/90 disabled:opacity-50"
+                  >
+                    {savingLook ? t('admin.categories.savingLook') : t('admin.categories.saveLook')}
+                  </button>
+                </div>
+              ) : null}
+              </div>
+            );
+            })}
 
             {categories.length === 0 && (
               <div className="text-center py-10 text-quiet text-sm">
@@ -314,28 +394,12 @@ export default function AdminPage() {
               {addError && <p className="text-xs text-red-400 mt-1">{addError}</p>}
             </div>
 
-            <div>
-              <label className="block text-xs text-quiet mb-1.5">
-                {t('admin.categories.iconLabel')}
-              </label>
-              <div className="flex flex-wrap gap-2">
-                {ICON_OPTIONS.map((iconName) => (
-                  <button
-                    key={iconName}
-                    onClick={() => setNewIcon(iconName)}
-                    className={`
-                      p-2 rounded-lg border transition-all
-                      ${newIcon === iconName
-                        ? 'bg-brand text-brand-ink border-brand'
-                        : 'bg-page text-quiet border-line hover:border-brand'}
-                    `}
-                    title={iconName}
-                  >
-                    <Icon name={iconName} className="w-4 h-4" />
-                  </button>
-                ))}
-              </div>
-            </div>
+            <CategoryLookFields
+              icon={newIcon}
+              palette={newPalette}
+              onIconChange={setNewIcon}
+              onPaletteChange={setNewPalette}
+            />
 
             <button
               onClick={handleAdd}
