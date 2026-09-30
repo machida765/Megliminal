@@ -4,13 +4,16 @@ import { useState } from 'react';
 import dynamic from 'next/dynamic';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 
-const ReactQueryDevtools = dynamic(
-  () =>
-    import('@tanstack/react-query-devtools').then(
-      (mod) => mod.ReactQueryDevtools
-    ),
-  { ssr: false }
-);
+const QueryDevtools =
+  process.env.NODE_ENV === 'production'
+    ? () => null
+    : dynamic(
+        () =>
+          import('@tanstack/react-query-devtools').then(
+            (mod) => mod.ReactQueryDevtools
+          ),
+        { ssr: false }
+      );
 
 export function QueryProvider({ children }: { children: React.ReactNode }) {
   const [queryClient] = useState(
@@ -30,9 +33,9 @@ export function QueryProvider({ children }: { children: React.ReactNode }) {
   return (
     <QueryClientProvider client={queryClient}>
       {children}
-      {process.env.NODE_ENV !== 'production' && (
-        <ReactQueryDevtools initialIsOpen={false} buttonPosition="bottom-right" />
-      )}
+      {process.env.NODE_ENV !== 'production' ? (
+        <QueryDevtools initialIsOpen={false} buttonPosition="bottom-right" />
+      ) : null}
     </QueryClientProvider>
   );
 }

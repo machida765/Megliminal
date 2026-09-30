@@ -1,4 +1,5 @@
-import { createHash } from 'crypto';
+import { createHash } from 'node:crypto';
+
 
 /** 同一メール・同一接続元あたり、この時間内の送信回数を制限する */
 export const CONTACT_RATE_WINDOW_MS = 60 * 60 * 1000;

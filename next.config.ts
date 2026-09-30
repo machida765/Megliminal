@@ -72,6 +72,22 @@ const securityHeaders = [
 ];
 
 const nextConfig: NextConfig = {
+  // クライアントに Node の vm を載せると eval が走り、本番 CSP に弾かれる
+  turbopack: {
+    resolveAlias: {
+      vm: './lib/stubs/vm.ts',
+    },
+  },
+  webpack: (config, { isServer }) => {
+    if (!isServer) {
+      config.resolve ??= {};
+      config.resolve.fallback = {
+        ...config.resolve.fallback,
+        vm: false,
+      };
+    }
+    return config;
+  },
   async headers() {
     return [
       {
