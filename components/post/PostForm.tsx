@@ -11,6 +11,7 @@ import { CategoryPicker } from '@/components/search/CategoryPicker';
 import { PopupNotice } from '@/components/ui/popup-notice';
 import { RequiredBadge } from '@/components/ui/required-badge';
 import { getRepository } from '@/lib/data';
+import { revalidateHomePage } from '@/lib/data/revalidate-home';
 import { useAuth } from '@/components/providers/AuthProvider';
 import { useTranslations } from '@/components/providers/LocaleProvider';
 import { ENFORCE_POST_FREQUENCY, PUBLIC_BOARD } from '@/lib/auth/public-board';
@@ -102,6 +103,7 @@ export function PostForm({ initialPost, onSubmit }: PostFormProps) {
         });
         invalidate('posts', 'post', 'postsByUser', 'postRankings');
         onSubmit?.(updated);
+        await revalidateHomePage();
         alert(t('post.updated'));
         router.push(`/post/${updated.id}`);
       } else {
@@ -115,8 +117,9 @@ export function PostForm({ initialPost, onSubmit }: PostFormProps) {
         });
         invalidate('posts', 'post', 'postsByUser', 'postRankings');
         onSubmit?.(newPost);
+        await revalidateHomePage();
         alert(t('post.published'));
-        router.push('/');
+        window.location.assign('/');
       }
     } catch {
       alert(t('post.saveFailed'));

@@ -4,6 +4,7 @@ import { useMemo, useState } from 'react';
 import Link from 'next/link';
 import { Flag, Trash2 } from 'lucide-react';
 import { getRepository } from '@/lib/data';
+import { revalidateHomePage } from '@/lib/data/revalidate-home';
 import { usePosts, useReports } from '@/lib/data/hooks';
 import { useTranslations } from '@/components/providers/LocaleProvider';
 import { type ReportReason } from '@/types';
@@ -70,6 +71,7 @@ export function AdminModeration() {
     const ids = [...selected];
     await getRepository().deletePosts(ids);
     await getRepository().resolveReports(ids);
+    await revalidateHomePage();
     setSelected(new Set());
     await reload();
     setDeleting(false);
