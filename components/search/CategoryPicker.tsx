@@ -8,6 +8,8 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { useTranslations } from '@/components/providers/LocaleProvider';
+import { RequiredBadge } from '@/components/ui/required-badge';
+import { cn } from '@/lib/utils';
 import type { MajorCategory, SubCategory } from '@/types';
 
 type CategoryPickerProps = {
@@ -27,6 +29,7 @@ type CategoryPickerProps = {
   noneSubLabel?: string;
   subOptional?: boolean;
   majorRequired?: boolean;
+  majorInvalid?: boolean;
 };
 
 export function CategoryPicker({
@@ -43,6 +46,7 @@ export function CategoryPicker({
   noneSubLabel,
   subOptional = false,
   majorRequired = false,
+  majorInvalid = false,
 }: CategoryPickerProps) {
   const { t } = useTranslations();
   const majorLabelText = majorLabel ?? t('category.major');
@@ -84,12 +88,27 @@ export function CategoryPicker({
   return (
     <div className="space-y-4">
       <div>
-        <p className="text-xs font-bold text-quiet mb-2">{majorLabelText}</p>
+        <p
+          className={
+            majorRequired
+              ? 'mb-2 block text-sm font-semibold text-ink'
+              : 'mb-2 text-xs font-bold text-quiet'
+          }
+        >
+          {majorLabelText}
+          {majorRequired ? <RequiredBadge /> : null}
+        </p>
         <Select
           value={majorRequired ? majorCategoryId || null : (majorCategoryId ?? allMajor)}
           onValueChange={handleMajorChange}
         >
-          <SelectTrigger className="w-full min-w-0 bg-white border-line">
+          <SelectTrigger
+            aria-invalid={majorInvalid || undefined}
+            className={cn(
+              'w-full min-w-0 bg-white border-line',
+              majorInvalid && 'border-red-500 ring-3 ring-red-500/20'
+            )}
+          >
             <SelectValue
               placeholder={
                 majorRequired ? t('category.selectMajor') : allMajor

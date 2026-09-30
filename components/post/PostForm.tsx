@@ -8,6 +8,8 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { CategoryPicker } from '@/components/search/CategoryPicker';
+import { PopupNotice } from '@/components/ui/popup-notice';
+import { RequiredBadge } from '@/components/ui/required-badge';
 import { getRepository } from '@/lib/data';
 import { useAuth } from '@/components/providers/AuthProvider';
 import { useTranslations } from '@/components/providers/LocaleProvider';
@@ -28,6 +30,11 @@ export function PostForm({ initialPost, onSubmit }: PostFormProps) {
   const { subCategories } = useSubCategories();
   const isEdit = Boolean(initialPost);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showRequiredPopup, setShowRequiredPopup] = useState(false);
+  const [invalidFields, setInvalidFields] = useState({
+    major: false,
+    title: false,
+  });
 
   const [formData, setFormData] = useState({
     majorCategoryId: initialPost?.majorCategoryId ?? '',
@@ -42,13 +49,19 @@ export function PostForm({ initialPost, onSubmit }: PostFormProps) {
   ) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
+    if (name === 'title') {
+      setInvalidFields((prev) => ({ ...prev, title: false }));
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!formData.majorCategoryId || !formData.title.trim()) {
-      alert(t('post.requiredFields'));
+    const majorMissing = !formData.majorCategoryId;
+    const titleMissing = !formData.title.trim();
+    if (majorMissing || titleMissing) {
+      setInvalidFields({ major: majorMissing, title: titleMissing });
+      setShowRequiredPopup(true);
       return;
     }
 
@@ -113,6 +126,7 @@ export function PostForm({ initialPost, onSubmit }: PostFormProps) {
   };
 
   return (
+    <>
     <Card>
       <CardHeader>
         <CardTitle>{isEdit ? t('post.editTitle') : t('post.newTitle')}</CardTitle>
@@ -125,7 +139,8 @@ export function PostForm({ initialPost, onSubmit }: PostFormProps) {
             subCategories={subCategories}
             majorCategoryId={formData.majorCategoryId || null}
             subCategoryId={formData.subCategoryId}
-            onMajorChange={(majorCategoryId) =>
+            onMajorChange={(majorCategoryId) => {
+              setInvalidFields((prev) => ({ ...prev, major: false }));
               setFormData((prev) => ({
                 ...prev,
                 majorCategoryId: majorCategoryId ?? '',
@@ -135,18 +150,20 @@ export function PostForm({ initialPost, onSubmit }: PostFormProps) {
                     ?.majorCategoryId === majorCategoryId
                     ? prev.subCategoryId
                     : null,
-              }))
-            }
+              }));
+            }}
             onSubChange={(subCategoryId) =>
               setFormData((prev) => ({ ...prev, subCategoryId }))
             }
             majorRequired
+            majorInvalid={invalidFields.major}
             subOptional
           />
 
           <div className="space-y-2">
             <label className="block text-sm font-semibold">
-              {t('post.titleLabel')} <span className="text-red-500">*</span>
+              {t('post.titleLabel')}
+              <RequiredBadge />
             </label>
             <Input
               type="text"
@@ -155,6 +172,10 @@ export function PostForm({ initialPost, onSubmit }: PostFormProps) {
               onChange={handleChange}
               placeholder={t('post.titlePlaceholder')}
               maxLength={100}
+              aria-invalid={invalidFields.title || undefined}
+              className={
+                invalidFields.title ? 'border-red-500 ring-3 ring-red-500/20' : undefined
+              }
             />
             <p className="text-xs text-gray-500">{formData.title.length} / 100</p>
           </div>
@@ -210,5 +231,13 @@ export function PostForm({ initialPost, onSubmit }: PostFormProps) {
         </form>
       </CardContent>
     </Card>
+    {showRequiredPopup ? (
+      <PopupNotice
+        title={t('post.requiredPopupTitle')}
+        message={t('post.requiredFields')}
+        onClose={() => setShowRequiredPopup(false)}
+      />
+    ) : null}
+    </>
   );
 }

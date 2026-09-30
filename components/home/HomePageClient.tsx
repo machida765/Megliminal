@@ -19,9 +19,7 @@ import { useTranslations } from '@/components/providers/LocaleProvider';
 import { UserAvatar } from '@/components/user/UserAvatar';
 import { SHOW_USER_IDENTITY } from '@/lib/auth/public-board';
 
-type HomePageClientProps = HomePageData & {
-  fetchCount?: number;
-};
+type HomePageClientProps = HomePageData;
 
 function pickRandomHero(candidates: Post[], fallback: Post | null): Post | null {
   if (candidates.length > 0) {
@@ -39,7 +37,6 @@ export function HomePageClient({
   categories,
   subCategories,
   tags,
-  fetchCount,
 }: HomePageClientProps) {
   const { t } = useTranslations();
   const [heroPost, setHeroPost] = useState<Post | null>(null);
@@ -74,15 +71,6 @@ export function HomePageClient({
 
   return (
     <div className="home-sunroom">
-      {fetchCount != null && fetchCount > 0 && (
-        <p
-          className="relative z-[1] mx-[4vw] mt-4 inline-block rounded-full bg-soft px-3 py-1.5 text-xs font-semibold text-ink"
-          title={t('home.fetchCountHint')}
-        >
-          {t('home.fetchCount', { count: fetchCount })}
-        </p>
-      )}
-
       <section className="home-hero" id="top">
         <div className="relative max-w-[650px]">
           <p className="section-kicker">

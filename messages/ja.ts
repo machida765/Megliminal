@@ -215,7 +215,8 @@ export const ja = {
     updated: '投稿を更新しました',
     published: '投稿しました',
     saveFailed: '保存に失敗しました',
-    requiredFields: '必須項目を入力してください',
+    requiredFields: '大ジャンルとタイトルは必須です。入力してから投稿してください。',
+    requiredPopupTitle: '必須項目が未入力です',
     notFound: '投稿が見つかりません',
     notFoundDetail: 'お探しの投稿は削除されたか、非表示にした可能性があります。',
     noEditPermission: 'この投稿を編集する権限がありません',
@@ -304,9 +305,6 @@ export const ja = {
       title: '人気のタグ',
       note: 'タグから投稿を探せます。',
     },
-    fetchCount: 'データ取得 {count} 回目',
-    fetchCountHint:
-      'リロードしても数字が同じなら、作り置きのHTMLを使っています。増えるたびに Supabase へ取りに行っています。',
   },
   shelf: {
     kicker: '本棚',

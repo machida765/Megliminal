@@ -28,7 +28,7 @@ async function createPost(
   url?: string
 ): Promise<void> {
   await fillPostForm(page, title, description, url);
-  await page.getByRole('button', { name: '投稿する' }).click();
+  await page.getByRole('main').getByRole('button', { name: '投稿する' }).click();
   await expect(page).toHaveURL(/\/$/);
 }
 
@@ -82,11 +82,12 @@ test.describe('投稿 CRUD', () => {
 
   test('必須項目が空だと投稿できない', async ({ page }) => {
     await page.goto('/create');
-    await page.getByRole('button', { name: '投稿する' }).click();
+    await page.getByRole('main').getByRole('button', { name: '投稿する' }).click();
 
-    await expect
-      .poll(() => dialogs.join('\n'))
-      .toContain('必須項目を入力してください');
+    const requiredPopup = page.getByRole('alertdialog');
+    await expect(requiredPopup).toBeVisible();
+    await expect(requiredPopup).toContainText('必須項目が未入力です');
+    await expect(requiredPopup).toContainText('大ジャンルとタイトルは必須です');
     await expect(page).toHaveURL(/\/create/);
   });
 
@@ -96,7 +97,7 @@ test.describe('投稿 CRUD', () => {
     await createPost(page, `E2E 1本目 ${Date.now()}`, '1本目の説明文です。');
 
     await fillPostForm(page, 'E2E 2本目', '2本目の説明文です。');
-    await page.getByRole('button', { name: '投稿する' }).click();
+    await page.getByRole('main').getByRole('button', { name: '投稿する' }).click();
 
     await expect.poll(() => dialogs.join('\n')).toContain('あと');
     await expect(page).toHaveURL(/\/create/);
