@@ -1,4 +1,5 @@
 import { createClient } from '@/lib/supabase/client';
+import { createPublicClient } from '@/lib/supabase/public';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { canAccessAdmin } from '@/lib/auth/admin-access';
 import { PUBLIC_BOARD } from '@/lib/auth/public-board';
@@ -1122,18 +1123,13 @@ export class SupabaseDataRepository implements DataRepository {
       throw new Error('通報者情報がありません。');
     }
 
-    const { data, error } = await this.client
-      .from('reports')
-      .insert(payload)
-      .select(
-        'id, post_id, reporter_id, reporter_key, reason, detail, status, created_at'
-      )
-      .maybeSingle();
+    const writeClient =
+      reporter && 'key' in reporter ? createPublicClient() : this.client;
 
-    // 匿名通報は SELECT ポリシーが reporter_id のみなので RETURNING が空になる。
-    // 同じ投稿への再送は unique(23505) になる。どちらも受付済みとして扱う。
+    const { error } = await writeClient.from('reports').insert(payload);
+
+    // 匿名は RETURNING / 再SELECT が RLS で 401 になる。重複は 23505。
     if (error && !isUniqueViolation(error)) throw error;
-    if (data) return mapReportRow(data);
 
     return submittedReport({
       postId: validatedPostId,

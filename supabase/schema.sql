@@ -500,7 +500,6 @@ create policy "reports_insert_anonymous" on public.reports
   for insert with check (
     reporter_id is null
     and reporter_key is not null
-    and auth.uid() is null
   );
 
 create policy "reports_update_admin" on public.reports
