@@ -102,6 +102,29 @@ function mapReportRow(row: SupabaseReportRow): Report {
   };
 }
 
+function isUniqueViolation(error: { code?: string } | null): boolean {
+  return error?.code === '23505';
+}
+
+function submittedReport(input: {
+  postId: string;
+  reason: ReportReason;
+  detail: string | null;
+  reporterId?: string;
+  reporterKey?: string;
+}): Report {
+  return {
+    id: 'submitted',
+    postId: input.postId,
+    reporterId: input.reporterId,
+    reporterKey: input.reporterKey,
+    reason: input.reason,
+    detail: input.detail ?? undefined,
+    createdAt: new Date().toISOString(),
+    status: 'pending',
+  };
+}
+
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type PostsSelectQuery = any;
 
@@ -1099,30 +1122,26 @@ export class SupabaseDataRepository implements DataRepository {
       throw new Error('通報者情報がありません。');
     }
 
-    const { error } = await this.client.from('reports').insert(payload);
-
-    if (error) throw error;
-
-    const isUserReport = Boolean(reporter && 'userId' in reporter);
-    const { data, error: fetchError } = await this.client
+    const { data, error } = await this.client
       .from('reports')
+      .insert(payload)
       .select(
         'id, post_id, reporter_id, reporter_key, reason, detail, status, created_at'
       )
-      .eq('post_id', validatedPostId)
-      .eq(
-        isUserReport ? 'reporter_id' : 'reporter_key',
-        isUserReport
-          ? (reporter as { userId: string }).userId
-          : (reporter as { key: string }).key
-      )
-      .single();
+      .maybeSingle();
 
-    if (fetchError || !data) {
-      throw fetchError ?? new Error('通報に失敗しました。');
-    }
+    // 匿名通報は SELECT ポリシーが reporter_id のみなので RETURNING が空になる。
+    // 同じ投稿への再送は unique(23505) になる。どちらも受付済みとして扱う。
+    if (error && !isUniqueViolation(error)) throw error;
+    if (data) return mapReportRow(data);
 
-    return mapReportRow(data);
+    return submittedReport({
+      postId: validatedPostId,
+      reason: validatedReason,
+      detail: validatedDetail,
+      reporterId: payload.reporter_id,
+      reporterKey: payload.reporter_key,
+    });
   }
 
   async hidePost(userId: string, postId: string) {
