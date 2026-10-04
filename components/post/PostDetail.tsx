@@ -129,11 +129,9 @@ export function PostDetail({
             {t('post.viewDetail')}
           </a>
         )}
-        {!isOwner && (
-          <div className="pt-6 mt-6 border-t border-line">
-            <PostModerationActions postId={post.id} onHidden={onHidden} />
-          </div>
-        )}
+        <div className="pt-6 mt-6 border-t border-line">
+          <PostModerationActions postId={post.id} onHidden={onHidden} />
+        </div>
       </article>
 
       <p className="rounded-[14px] border border-line bg-surface p-4 text-sm text-quiet">
