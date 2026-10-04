@@ -27,6 +27,7 @@ import {
   GripVertical,
   Paintbrush,
   ShieldAlert,
+  LogOut,
 } from 'lucide-react';
 
 function Icon({ name, className = 'w-4 h-4' }: { name?: string; className?: string }) {
@@ -36,7 +37,7 @@ function Icon({ name, className = 'w-4 h-4' }: { name?: string; className?: stri
 
 export default function AdminPage() {
   const { t } = useTranslations();
-  const { user, profile, loading: authLoading } = useAuth();
+  const { user, profile, loading: authLoading, signOut } = useAuth();
   const [tab, setTab] = useState<'categories' | 'moderation'>('moderation');
   const {
     data: categories = [],
@@ -212,6 +213,13 @@ export default function AdminPage() {
           <ShieldAlert className="w-5 h-5 text-amber-400" />
           <h1 className="text-lg font-bold tracking-wide">{t('admin.title')}</h1>
           <span className="ml-auto text-xs text-quiet font-mono">/admin</span>
+          <button
+            onClick={signOut}
+            className="ml-2 p-2 rounded-lg hover:bg-soft text-quiet hover:text-ink transition-colors"
+            title={t('nav.logout')}
+          >
+            <LogOut className="w-4 h-4" />
+          </button>
         </div>
       </div>
 

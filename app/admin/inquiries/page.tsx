@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { Mail, ArrowLeft } from 'lucide-react';
+import { Mail, ArrowLeft, LogOut } from 'lucide-react';
 import { AdminInquiries } from '@/components/contact/AdminInquiries';
 import { useAuth } from '@/components/providers/AuthProvider';
 import { useTranslations } from '@/components/providers/LocaleProvider';
@@ -9,7 +9,7 @@ import { canAccessAdmin } from '@/lib/auth/admin-access';
 
 export default function AdminInquiriesPage() {
   const { t } = useTranslations();
-  const { user, profile, loading: authLoading } = useAuth();
+  const { user, profile, loading: authLoading, signOut } = useAuth();
 
   if (authLoading) {
     return (
@@ -40,6 +40,13 @@ export default function AdminInquiriesPage() {
             <ArrowLeft className="w-3.5 h-3.5" />
             {t('admin.inquiries.backToAdmin')}
           </Link>
+          <button
+            onClick={signOut}
+            className="p-2 rounded-lg hover:bg-soft text-quiet hover:text-ink transition-colors"
+            title={t('nav.logout')}
+          >
+            <LogOut className="w-4 h-4" />
+          </button>
         </div>
       </div>
 
