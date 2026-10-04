@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Flag, EyeOff } from 'lucide-react';
+import { Flag, EyeOff, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   Select,
@@ -36,9 +36,11 @@ export function PostModerationActions({
   const [detail, setDetail] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [reportError, setReportError] = useState('');
+  const [deleting, setDeleting] = useState(false);
 
   // ログイン状態に関わらず常に通報機能を表示
   const canReport = true;
+  const isAdmin = user?.user_metadata?.role === 'admin';
 
   const reasonLabels = messages.report.reason;
   const selectedReasonLabel = reasonLabels[reason];
@@ -76,6 +78,23 @@ export function PostModerationActions({
     onHidden?.();
   };
 
+  const handleAdminDelete = async () => {
+    if (!isAdmin) return;
+    if (!confirm('この投稿を削除しますか？')) {
+      return;
+    }
+    setDeleting(true);
+    try {
+      await getRepository().deletePost(postId);
+      invalidate('posts', 'post');
+      onHidden?.();
+    } catch {
+      alert('削除に失敗しました');
+    } finally {
+      setDeleting(false);
+    }
+  };
+
   return (
     <div className="space-y-3">
       <div className="flex flex-wrap gap-2">
@@ -99,6 +118,19 @@ export function PostModerationActions({
           >
             <EyeOff className="w-4 h-4" />
             {t('report.hide')}
+          </Button>
+        ) : null}
+        {isAdmin ? (
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            className="gap-2 text-red-600 hover:bg-red-50"
+            disabled={deleting}
+            onClick={handleAdminDelete}
+          >
+            <Trash2 className="w-4 h-4" />
+            {deleting ? '削除中...' : '削除'}
           </Button>
         ) : null}
       </div>
