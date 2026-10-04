@@ -29,7 +29,7 @@ export function PostModerationActions({
   onHidden,
 }: PostModerationActionsProps) {
   const { t, messages } = useTranslations();
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
   const invalidate = useInvalidate();
   const [showReport, setShowReport] = useState(false);
   const [reason, setReason] = useState<ReportReason>('inappropriate');
@@ -40,7 +40,7 @@ export function PostModerationActions({
 
   // ログイン状態に関わらず常に通報機能を表示
   const canReport = true;
-  const isAdmin = user?.user_metadata?.role === 'admin';
+  const isAdmin = profile?.role === 'admin';
 
   const reasonLabels = messages.report.reason;
   const selectedReasonLabel = reasonLabels[reason];
