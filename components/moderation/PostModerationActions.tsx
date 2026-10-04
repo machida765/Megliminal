@@ -37,8 +37,8 @@ export function PostModerationActions({
   const [submitting, setSubmitting] = useState(false);
   const [reportError, setReportError] = useState('');
 
-  const canReport = Boolean(user) || PUBLIC_BOARD;
-  if (!canReport) return null;
+  // ログイン状態に関わらず常に通報機能を表示
+  const canReport = true;
 
   const reasonLabels = messages.report.reason;
   const selectedReasonLabel = reasonLabels[reason];
